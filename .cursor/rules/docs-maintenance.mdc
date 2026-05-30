@@ -1,0 +1,12 @@
+---
+description: Keep probe-service docs in sync with actual code
+alwaysApply: true
+---
+
+# Documentation maintenance
+
+- Docs must reflect actual implemented behavior, not planned future work
+- Keep updates lightweight; avoid heavy architecture or flow documentation until the repo has enough real implementation
+- Do not create speculative docs (architecture.md, flows/, entities-enums.md, external-services.md, etc.) unless explicitly requested
+- Update docs when behavior changes; skip doc updates for refactors that do not change behavior
+- Specs under `specs/` describe experiments; update `tasks.md` checkboxes when tasks complete

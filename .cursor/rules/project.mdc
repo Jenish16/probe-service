@@ -1,0 +1,25 @@
+---
+description: probe-service project conventions for AI-assisted development
+alwaysApply: true
+---
+
+# probe-service
+
+This is a lightweight POC AI-fication repo. Read [AGENTS.md](../AGENTS.md) before making changes.
+
+## Structure
+
+- Normal Java Spring Boot service under `com.codeistari.probe`
+- Packages: `controller`, `dto`, `service`, `client`, `mapper`, `config`, `exception`, `domain`
+- Do not structure the codebase around `forge-service`; it is a downstream dependency only
+
+## DTO boundaries
+
+- Public API DTOs: `dto/request`, `dto/response` (Probe* naming)
+- Downstream forge REST DTOs: `dto/client/forge/` (Forge* naming)
+- Do not reuse public API DTOs as downstream REST DTOs
+
+## Contracts
+
+- Do not change the `forge-service` REST/gRPC contract from probe-service
+- Proto source of truth: `proto/artifact_forge_service.proto`
