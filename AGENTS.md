@@ -19,6 +19,14 @@ Read these files before making changes:
 - Ask if requirements are unclear before guessing.
 - Update tests when behavior changes.
 - Update docs only when actual behavior changes — no speculative future docs.
+- `docs/architecture.md`, `docs/entities-enums.md`, `docs/external-services.md`, and `docs/flows/` are part of the AI-fication baseline and now exist — keep them in sync with real code (see `.cursor/rules/docs-maintenance.mdc`), but keep additions proportional to this repo's small size. Do not expand them speculatively.
+
+## Parallel SDD
+
+- This repo has both a Spec Kit adapter (`.sdd-parallel/adapters/spec-kit/`) and an OpenSpec schema (`openspec/schemas/myntra-sdd/`) installed. Both are currently **activation pending** — neither Spec Kit nor OpenSpec is initialized in this repo yet.
+- When a feature is driven through Spec Kit or OpenSpec, read its `status.yaml` and any `parallel-design-review.md` / `implementation-conflict-review.md` before planning or implementing; follow the gates in `.sdd-parallel/WORKFLOW.md`.
+- Technical Spec PRs use `[SDD-TECH][<initiative-id>] <title>`; implementation PRs use `[SDD-IMPL][<initiative-id>] <title>`.
+- AI-fication itself created no `status.yaml` for the existing `specs/001-artifact-forging-rest-grpc` folder — it predates Parallel SDD and is treated as legacy-completed, not retrofitted.
 
 ## Package structure
 

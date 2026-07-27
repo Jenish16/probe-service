@@ -1,0 +1,31 @@
+setup_version: 5
+minimum_versions:
+  speckit: "0.8.6"
+  openspec: "1.6.0"
+tested_versions:
+  speckit: "0.14.2"
+  openspec: "1.6.0"
+framework_refresh:
+  preflight: .sdd-parallel/bin/sdd_parallel_preflight.py
+  state: git-metadata:sdd-parallel-framework-state.json
+  openspec:
+    base_schema: spec-driven
+    overlay: .sdd-parallel/openspec-overlay.yaml
+    generated_schema: myntra-sdd
+  speckit:
+    extension_source: .sdd-parallel/adapters/spec-kit
+  compatible_upgrade_behavior: regenerate-refresh-and-validate
+  incompatible_upgrade_behavior: fail-closed
+install_adapters:
+  spec_kit: true
+  openspec: true
+discovery:
+  current_repository_open_prs: true
+  related_repository_open_prs: true
+  organization_wide_search: false
+  follow_counterpart_urls: true
+legacy:
+  missing_status_behavior: treat-as-implemented
+pr_title_prefixes:
+  technical_spec: "[SDD-TECH]"
+  implementation: "[SDD-IMPL]"

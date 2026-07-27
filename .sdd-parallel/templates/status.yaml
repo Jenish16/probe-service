@@ -1,0 +1,11 @@
+schema_version: 2
+initiative_id: "<ask-developer>"
+status: functional-approved
+updated_at: "<current-ISO-8601-timestamp>"
+pull_requests:
+  technical_spec: []
+  implementation: []
+related_repositories: []
+parallel_discovery: not-run
+implementation_conflict: not-run
+counterpart_specs: []

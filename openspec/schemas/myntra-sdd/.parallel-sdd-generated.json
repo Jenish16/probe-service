@@ -1,0 +1,17 @@
+{
+  "generated_by": "parallel-sdd-overlay",
+  "generator_version": 1,
+  "overlay_version": 1,
+  "openspec_version": "1.6.0",
+  "base_schema": "spec-driven",
+  "source_fingerprint": "5a53d067e3a28b43666036e434a03d3816a858c805c51537d4ad2e6034be33a8",
+  "generated_files": {
+    "schema.yaml": "92cfe851dd107cd9d55e630da632751cc31509cf71fce533b16e25e760fa0e52",
+    "templates/design.md": "3251f08057d142f6e3c26f65f5f100ab602ee7ce880d5503bfaa45668ba19f59",
+    "templates/implementation-conflict-review.md": "887dc7d9795406f25e9c365ab058d82744a8f6753431c635a3c658dd1bf62894",
+    "templates/parallel-design-review.md": "8396de94d6c0fe3b122e1785e8a3976546f8700f23d776c564f160bb9c3c6c69",
+    "templates/proposal.md": "9c554e0dbe918e3dc745dcc143a999e1d102954d75fb6e51e231c4cba78f06f3",
+    "templates/spec.md": "e025078f238dc6e4df552a1e0a140cf9efce0bbdecbeb9f45837d45ed91dca01",
+    "templates/tasks.md": "b2a6a4c08c15f347a1d8c3e2d43e0c8fb066dc5cc0feb795f47555f176f9c421"
+  }
+}

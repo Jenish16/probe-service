@@ -6,7 +6,7 @@ alwaysApply: true
 # Documentation maintenance
 
 - Docs must reflect actual implemented behavior, not planned future work
-- Keep updates lightweight; avoid heavy architecture or flow documentation until the repo has enough real implementation
-- Do not create speculative docs (architecture.md, flows/, entities-enums.md, external-services.md, etc.) unless explicitly requested
+- Keep updates lightweight; `docs/architecture.md`, `docs/flows/`, `docs/entities-enums.md`, and `docs/external-services.md` are part of the installed AI-fication baseline and now exist — keep them current whenever the module map, enums, API contracts, or upstream/downstream relationships change. Do not expand them beyond what real implementation supports.
+- Do not add New Relic/metrics docs or heavy Mermaid diagrams beyond the required component/sequence diagrams — this stays a lightweight POC.
 - Update docs when behavior changes; skip doc updates for refactors that do not change behavior
 - Specs under `specs/` describe experiments; update `tasks.md` checkboxes when tasks complete

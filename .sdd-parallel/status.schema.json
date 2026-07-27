@@ -1,0 +1,94 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:myntra:parallel-sdd:status:v2",
+  "title": "Parallel SDD lifecycle status",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "initiative_id",
+    "status",
+    "updated_at",
+    "pull_requests",
+    "related_repositories",
+    "parallel_discovery",
+    "implementation_conflict",
+    "counterpart_specs"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": 2
+    },
+    "initiative_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "status": {
+      "enum": [
+        "functional-approved",
+        "tech-design-in-progress",
+        "tech-approved",
+        "implementation-in-progress",
+        "implemented"
+      ]
+    },
+    "updated_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "pull_requests": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "technical_spec",
+        "implementation"
+      ],
+      "properties": {
+        "technical_spec": {
+          "$ref": "#/$defs/uniqueUriList"
+        },
+        "implementation": {
+          "$ref": "#/$defs/uniqueUriList"
+        }
+      }
+    },
+    "related_repositories": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "pattern": "^[^/\\s]+/[^/\\s]+$"
+      },
+      "uniqueItems": true
+    },
+    "parallel_discovery": {
+      "$ref": "#/$defs/checkResult"
+    },
+    "implementation_conflict": {
+      "$ref": "#/$defs/checkResult"
+    },
+    "counterpart_specs": {
+      "$ref": "#/$defs/uniqueUriList"
+    }
+  },
+  "$defs": {
+    "uniqueUriList": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "format": "uri"
+      },
+      "uniqueItems": true
+    },
+    "checkResult": {
+      "enum": [
+        "not-run",
+        "passed",
+        "potential-overlap",
+        "dependency",
+        "blocked",
+        "stale",
+        "scan-unavailable"
+      ]
+    }
+  }
+}

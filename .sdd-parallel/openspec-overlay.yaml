@@ -1,0 +1,101 @@
+overlay_version: 1
+minimum_openspec_version: "1.6.0"
+base_schema: spec-driven
+output_schema:
+  name: myntra-sdd
+  version: 3
+  description_suffix: with Parallel SDD design and implementation conflict gates
+
+required_base_artifacts:
+  - proposal
+  - specs
+  - design
+  - tasks
+
+preflight_instruction: |
+  Parallel SDD preflight (mandatory):
+  Run `python3 .sdd-parallel/bin/sdd_parallel_preflight.py --framework openspec`
+  before creating or updating this artifact. Stop if it fails. If it reports
+  that the schema was regenerated, request the current OpenSpec instructions
+  again before continuing so the refreshed upstream guidance is used.
+
+artifact_instruction_suffixes:
+  proposal: |
+    Parallel SDD additions:
+    Follow Initialize in `.sdd-parallel/WORKFLOW.md`. Use the approved
+    Functional Spec as authoritative input. Infer likely affected repositories
+    from the Functional Spec, Functional Code Context, and dependency docs;
+    ask the developer to confirm them and store them in
+    `related_repositories`.
+  specs: |
+    Parallel SDD addition:
+    Keep implementation choices out of behavioral specifications.
+  design: |
+    Parallel SDD additions:
+    Reference approved PD decisions. Identify affected APIs, events, data,
+    components, libraries, configuration, tests, dependencies, ownership,
+    compatibility, rollout sequencing, and rollback. Ask instead of guessing
+    when an answer would change the design or tasks.
+  tasks: |
+    Parallel SDD additions:
+    Include only work owned by this project and reference relevant PD
+    decisions. Include tasks for implementation, tests, documentation, both
+    context refreshes, and dependency integration when applicable.
+
+insertions:
+  - after: specs
+    artifact:
+      id: parallel-design-review
+      generates: parallel-design-review.md
+      description: Parallel Design Discovery and durable PD decisions
+      template: parallel-design-review.md
+      instruction: |
+        Execute Discovery and Gate 1 from `.sdd-parallel/WORKFLOW.md`. Ask the
+        developer about material ambiguity, store clarification and approval
+        state as PD-* decisions, snapshot every remote source, compute the
+        combined fingerprint, and update `status.yaml`. Do not assign
+        cross-service ownership automatically.
+      requires:
+        - proposal
+        - specs
+  - after: tasks
+    artifact:
+      id: implementation-conflict-review
+      generates: implementation-conflict-review.md
+      description: Exact implementation conflict, reuse, ownership, and sequencing check
+      template: implementation-conflict-review.md
+      instruction: |
+        Require status `tech-approved`, then execute Discovery and Gate 2 from
+        `.sdd-parallel/WORKFLOW.md`. Re-fetch every remote source, store
+        revision snapshots, compute the combined fingerprint, ask about
+        material ambiguity, store IC-* decisions, and update `status.yaml`.
+        A missing, blocked, stale, or scan-unavailable result does not permit
+        implementation.
+      requires:
+        - tasks
+
+dependency_additions:
+  design:
+    - parallel-design-review
+
+apply_requirements:
+  - implementation-conflict-review
+
+apply_instruction_suffix: |
+  Parallel SDD additions:
+  Before changing code, rerun Discovery and Gate 2 from
+  `.sdd-parallel/WORKFLOW.md` against the current design, tasks, and remote PR
+  state. Continue only when the report is current and
+  `implementation_conflict` is passed or an approved dependency permits the
+  owned tasks. Set status to `implementation-in-progress` and implement only
+  owned tasks.
+
+  After implementation, execute Implementation completion validation from the
+  shared workflow. Record implementation PR URLs and available evidence, but
+  keep `implementation-in-progress` until merge, tests, documentation,
+  integration validation, and both context refreshes are evidenced. Rerun
+  completion validation after merge before setting `implemented`.
+
+template_sources:
+  parallel-design-review.md: .sdd-parallel/templates/parallel-design-review.md
+  implementation-conflict-review.md: .sdd-parallel/templates/implementation-conflict-review.md

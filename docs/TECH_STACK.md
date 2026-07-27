@@ -24,3 +24,16 @@ Current experiment has no database or cache.
 |-----------|----------|
 | forge-service REST | `http://localhost:8081` |
 | forge-service gRPC | `localhost:9091` |
+
+## Internal libraries
+
+None. This repository does not depend on any shared/internal Myntra or Code Istari libraries — all code is local to `probe-service`.
+
+## Commands
+
+```bash
+./gradlew bootRun   # run the service (REST :8082)
+./gradlew test       # run unit, controller, mapper, and client tests
+```
+
+See `docs/LOCAL_DEVELOPMENT.md` for example REST calls and the `forge-service` companion setup.

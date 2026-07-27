@@ -23,3 +23,7 @@ This is a lightweight POC AI-fication repo. Read [AGENTS.md](../AGENTS.md) befor
 
 - Do not change the `forge-service` REST/gRPC contract from probe-service
 - Proto source of truth: `proto/artifact_forge_service.proto`
+
+## AI-fication baseline
+
+Full AI-fication baseline is installed (`docs/architecture.md`, `docs/entities-enums.md`, `docs/external-services.md`, `docs/flows/`, Parallel SDD adapters). Keep them accurate but proportionally small — see "Parallel SDD" in `AGENTS.md`.

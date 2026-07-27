@@ -1,5 +1,11 @@
 # AI context
 
+## Read first
+
+- [`docs/README.md`](README.md) — index of all docs
+- [`../specs/README.md`](../specs/README.md) — how specs/experiments and tasks work
+- The relevant `specs/<feature>/spec.md` + `tasks.md` for the feature you are working on
+
 ## Service role
 
 `probe-service` is a normal Spring Boot caller-side service. It exposes its own REST APIs and may call external/downstream services when required.
@@ -55,3 +61,27 @@ External caller → probe-service REST API → forge-service (REST or gRPC)
 - Service: `ArtifactForgeService`
 - Generated Java package: `com.codeistari.forge.artifact.grpc.proto`
 - Proto file: `proto/artifact_forge_service.proto`
+
+## Critical rules
+
+- Keep it lightweight: no frameworks/infrastructure without a clear reason (see `AGENTS.md`).
+- Do not structure the codebase around `forge-service` — it is a downstream dependency, not the root module.
+- Keep public DTOs (`dto/request`, `dto/response`) separate from downstream forge DTOs (`dto/client/forge/`); never reuse one as the other.
+- Do not remove the Resilience4j timeouts/circuit-breaker/retry config without updating `docs/tech-stack.md` and the relevant spec.
+
+## Known anti-patterns / deviations
+
+- **Unused abstraction**: `ForgeJobClient` is implemented by both `RestForgeJobClient` and `GrpcForgeJobClient`, but `ProbeRequestService` holds them as concrete-typed fields and calls each directly rather than dispatching through the interface — the interface currently adds no polymorphism.
+- **Duplicated enums across repos**: `ArtifactType` and `ForgeMaterial` are copy-defined here and in forge-service (no shared library); if forge-service adds/renames a value, this repo must be updated manually and will otherwise fail enum parsing (`ArtifactType.valueOf(...)` in `ProbeRequestMapper`).
+
+## Important flows
+
+- [Create forge job](flows/create-forge-job/README.md) — REST + gRPC create path, including resilience/error mapping
+- [Get forge job](flows/get-forge-job/README.md) — REST + gRPC retrieval path, including not-found and downstream-failure handling
+
+## Commands
+
+```bash
+./gradlew bootRun   # run the service (REST :8082)
+./gradlew test       # run unit, controller, mapper, and client tests
+```
