@@ -1,12 +1,13 @@
 schema_version: 2
 initiative_id: "POC-QUEST-LOADOUTS"
 status: implementation-in-progress
-updated_at: "2026-08-04T00:58:00+05:30"
+updated_at: "2026-08-04T01:02:00+05:30"
 pull_requests:
   technical_spec:
     - "https://github.com/Jenish16/probe-service/pull/3"
     - "https://github.com/Jenish16/probe-service/pull/5"
-  implementation: []
+  implementation:
+    - "https://github.com/Jenish16/probe-service/pull/8"
 related_repositories:
   - "Jenish16/forge-service"
 parallel_discovery: dependency

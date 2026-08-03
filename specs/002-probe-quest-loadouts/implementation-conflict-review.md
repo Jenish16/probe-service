@@ -169,7 +169,7 @@ Implementation may proceed.
 
 | Evidence | Result | Source |
 |---|---|---|
-| Implementation PRs merged | Pending — no `[SDD-IMPL][POC-QUEST-LOADOUTS]` PR opened yet on branch `quest-loadouts-implementation` | `gh pr list` (2026-08-04) |
+| Implementation PRs merged | Pending — [probe-service#8](https://github.com/Jenish16/probe-service/pull/8) opened, not yet merged | `gh pr list` (2026-08-04) |
 | Mandatory tasks complete | Pass — all 61 tasks in `tasks.md` marked `[X]` | `specs/002-probe-quest-loadouts/tasks.md` |
 | Required tests passed | Pass — `gradle test` BUILD SUCCESSFUL (all unit/controller/client/mapper tests green, including existing single-artifact regression) | Local run (2026-08-04) |
 | Documentation updated | Pass — `docs/architecture.md`, `docs/entities-enums.md`, `docs/external-services.md` updated (T057–T059) | Working tree |
