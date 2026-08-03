@@ -25,6 +25,21 @@ responsibilities to any participating system, name an orchestration owner,
 or make any technical design, API, or storage decisions — those are Technical
 Spec concerns to be resolved during planning.
 
+## Clarifications
+
+### Session 2026-08-03
+
+- Q: What counts as "identical content" when a `requestReference` is reused, such that the existing loadout is returned instead of the resubmission being rejected? → A: An identical request has the same `loadoutName`, `requestedBy`, and complete ordered item list, with all item fields equal.
+- Q: Does the 2–10 item limit apply to the total number of items submitted in a creation request, or only to the items that pass validation? → A: The 2–10 item limit applies to the total number of submitted items, checked before per-item validation.
+- Q: Must the create response's loadout status always be `ACCEPTED`, or may it already show further progress if item processing starts before the response is returned? → A: The create response's loadout status is always `ACCEPTED`, even if item processing begins immediately; retrieval calls after creation are what surface `IN_PROGRESS`/later statuses.
+- Q: Should a retry request always retry every currently-failed item in the loadout, or let the requester select a specific subset of failed items? → A: A retry request always retries every currently-failed item in the loadout; there is no selective/partial retry of specific items.
+- Q: Are cancelled items ever eligible for retry? → A: A cancelled item can NEVER be retried — cancellation is terminal for that item, and only failed items are retry-eligible.
+- Q: What happens when a requester retries a loadout that currently has no `FAILED` items? → A: The retry is a safe no-op; there is nothing eligible to retry, and no new attempt is created.
+- Q: What happens when a requester repeats the same retry request for an item while a successor attempt for that item already exists (i.e., it was already retried)? → A: The repeated retry does not create another attempt; an item is only retried once per failed attempt, and a successor attempt already existing means that retry was already actioned.
+- Q: What happens when a requester cancels a loadout that has no outstanding (non-terminal) work remaining? → A: The cancellation is a safe no-op; it has no effect and creates no additional work.
+- Q: When a requester cancels a loadout that already has some completed items, what should the resulting loadout status be? → A: If any accepted item already completed successfully before cancellation, the final status is `READY` (if every accepted item had already succeeded) or `PARTIALLY_READY` (if at least one accepted item succeeded and the rest failed or were cancelled). `CANCELLED` applies only when cancellation occurred and no accepted item had succeeded. `FAILED` applies when processing finished without any cancellation and no accepted item succeeded.
+- Q: Do completed and failed item results remain visible after a loadout is cancelled? → A: Yes; completed and failed item results are retained and remain visible, unaffected by cancellation of the loadout's other outstanding items.
+
 ## User Scenarios & Testing *(mandatory)*
 
 ### User Story 1 - Create a quest loadout (Priority: P1)
@@ -50,7 +65,8 @@ capability to be built.
 1. **Given** a valid four-item loadout submission, **When** it is submitted,
    **Then** the requester receives a stable loadout reference, all four items
    are accepted, item order matches the submitted order, and the loadout
-   status reflects that processing can begin.
+   status returned in the response is `ACCEPTED`, regardless of whether item
+   processing has already started.
 2. **Given** a loadout submission with three valid items and one invalid
    item, **When** it is submitted, **Then** the three valid items are
    accepted and continue, and the invalid item is reported individually with
@@ -59,10 +75,14 @@ capability to be built.
    submitted, **Then** the loadout is not created and every item's rejection
    reason is reported.
 4. **Given** a previously accepted loadout submission, **When** the same
-   `requestReference` is resubmitted with identical content, **Then** the
-   existing loadout is returned rather than creating a duplicate.
+   `requestReference` is resubmitted with the same `loadoutName`,
+   `requestedBy`, and complete ordered item list (all item fields equal),
+   **Then** the existing loadout is returned rather than creating a
+   duplicate.
 5. **Given** a previously used `requestReference`, **When** it is resubmitted
-   with different content, **Then** the resubmission is rejected.
+   with a different `loadoutName`, `requestedBy`, or item list (including a
+   different item order or any differing item field), **Then** the
+   resubmission is rejected as reusing the reference with different content.
 
 ---
 
@@ -142,19 +162,29 @@ results remain visible while active items stop and do not later complete.
 
 1. **Given** a loadout containing completed and still-active items, **When**
    the requester cancels it, **Then** the completed items retain their
-   results and the active items' outstanding work is cancelled.
-2. **Given** a loadout that has already been cancelled, **When** the
+   results, the active items' outstanding work is cancelled, and the
+   loadout's overall status reflects partial (or full) success rather than
+   `CANCELLED`, since at least one item already succeeded.
+2. **Given** a loadout with no completed items, containing only active
+   items, **When** the requester cancels it, **Then** all outstanding work
+   is cancelled and the loadout's overall status becomes `CANCELLED`.
+3. **Given** a loadout that has already been cancelled, **When** the
    requester cancels it again, **Then** the repeated cancellation has no
    additional effect and does not create new work.
-3. **Given** a cancelled item, **When** no further action is taken, **Then**
-   the item does not restart on its own.
+4. **Given** a cancelled item, **When** no further action is taken or a
+   retry is requested, **Then** the item does not restart on its own and is
+   not included in any subsequent retry, since cancellation is terminal for
+   that item.
 
 ---
 
 ### User Story 5 - Retry failed loadout items (Priority: P2)
 
-A quest leader retries the failed items of a loadout — for example after
-correcting invalid input — without affecting items that already succeeded.
+A quest leader retries a loadout — for example after correcting invalid
+input — which retries every currently-failed item in that loadout, without
+affecting items that already succeeded. Retry always applies to the whole
+set of currently-failed items; a requester cannot select a subset of failed
+items to retry.
 
 **Why this priority**: Retry closes the loop on partial failure, letting a
 requester recover a loadout to full completion, but it depends on loadouts
@@ -167,12 +197,12 @@ receive new attempts while successful items are unchanged.
 **Acceptance Scenarios**:
 
 1. **Given** a loadout with successful and failed items, **When** the
-   requester retries it, **Then** each failed item receives exactly one new
-   attempt under its existing item reference, and successful items are left
-   unchanged.
-2. **Given** a loadout retry that has already been requested and is still
-   being processed, **When** the same retry is requested again, **Then** no
-   duplicate attempt is created.
+   requester retries it, **Then** every currently-failed item receives
+   exactly one new attempt under its existing item reference, and successful
+   items are left unchanged.
+2. **Given** an item that already has a successor attempt (i.e., it was
+   already retried), **When** the same retry is requested again for that
+   item, **Then** no duplicate attempt is created.
 3. **Given** an item with a prior failed attempt that is retried
    successfully, **When** the item's attempt history is later retrieved,
    **Then** the previous failed attempt is still visible alongside the new
@@ -184,23 +214,35 @@ receive new attempts while successful items are unchanged.
 
 - What happens when a creation request contains fewer than 2 items or more
   than 10 items? The request must be rejected rather than partially
-  accepted.
+  accepted. This 2–10 limit is checked against the total number of items
+  submitted, before per-item validation runs.
 - What happens when a creation request contains zero valid items (all
   invalid)? No loadout is created.
 - What happens when a `requestReference` is reused with content that differs
   only slightly (e.g., item order, whitespace, or a changed field value) from
-  the original request? The resubmission must be treated as different content
-  and rejected, not silently accepted as identical.
-- What happens when a requester retries a loadout that has no failed items?
-  The retry has no effect since there is nothing eligible to retry.
+  the original request? "Identical content" means the same `loadoutName`,
+  `requestedBy`, and complete ordered item list with all item fields equal;
+  any other difference (including item order) must be treated as different
+  content and rejected, not silently accepted as identical.
+- What happens when a requester retries a loadout that has no `FAILED`
+  items? The retry is a safe no-op: it has no effect and creates no new
+  attempt, since there is nothing eligible to retry.
+- What happens when a requester repeats the same retry request for an item
+  that already has a successor attempt (i.e., it was already retried)? No
+  duplicate attempt is created; the repeated retry request has no effect on
+  that item.
 - What happens when a requester retries an item that was cancelled rather
-  than failed? Retry is only permitted for items in a state where retry is
-  explicitly allowed; cancelled items follow the same restriction described
-  in User Story 4.
+  than failed? Cancellation is terminal for that item; a cancelled item is
+  never retry-eligible, and only currently-failed items are retried.
 - What happens when a requester cancels a loadout that is already fully
   `READY`, `PARTIALLY_READY`, or `FAILED` (i.e., no outstanding work
   remains)? The cancellation is safe and has no effect since there is nothing
   outstanding to cancel.
+- What happens when a requester cancels a loadout that has a mix of
+  completed and still-outstanding items? Outstanding work is cancelled, but
+  the overall loadout status reflects the completed items'
+  success (`READY` or `PARTIALLY_READY`) rather than `CANCELLED`; `CANCELLED`
+  is only used when no accepted item had completed successfully.
 - What happens when two identical creation requests (same `requestReference`
   and same content) are submitted concurrently? Only one loadout is created;
   both callers see the same loadout reference.
@@ -216,6 +258,8 @@ receive new attempts while successful items are unchanged.
   creation request containing a `loadoutName`, a `requestedBy` value, a
   `requestReference`, and between 2 and 10 artifact items, where each item
   specifies an `artifactName`, `artifactType`, `material`, and `powerLevel`.
+  The 2–10 item count limit MUST be checked against the total number of
+  items submitted, before per-item validation runs.
 - **FR-002**: The product MUST validate every item in a creation request
   against the existing artifact-name, type, material, and power-level rules,
   and MUST report invalid items individually rather than rejecting the whole
@@ -228,40 +272,59 @@ receive new attempts while successful items are unchanged.
   request when returning accepted items.
 - **FR-006**: The product MUST return, in response to a creation request, a
   stable `loadoutId`, the accepted items, any items rejected during
-  validation with their rejection reasons, and the current loadout status.
+  validation with their rejection reasons, and the loadout status, which
+  MUST always be `ACCEPTED` in the creation response regardless of whether
+  item processing has already started; later statuses (e.g.,
+  `IN_PROGRESS`) are only observable through subsequent retrieval.
 - **FR-007**: The product MUST assign a stable `loadoutItemId` to every
   accepted item, usable by the requester without needing any internal
   service-specific identifiers.
 - **FR-008**: The product MUST return the existing loadout, rather than
   creating a new one, when a creation request repeats a previously used
-  `requestReference` with identical content.
+  `requestReference` with identical content, defined as the same
+  `loadoutName`, `requestedBy`, and complete ordered item list with all item
+  fields equal.
 - **FR-009**: The product MUST reject a creation request when it reuses a
   previously used `requestReference` with content that differs from the
-  original request.
+  original request in `loadoutName`, `requestedBy`, item order, or any item
+  field.
 - **FR-010**: The product MUST allow a requester to retrieve a loadout by its
   `loadoutId`, including the current status of the loadout and of every one
   of its items.
 - **FR-011**: The product MUST derive and expose the overall loadout status
   (`ACCEPTED`, `IN_PROGRESS`, `READY`, `PARTIALLY_READY`, `FAILED`, or
-  `CANCELLED`) from the latest visible states of its accepted items.
+  `CANCELLED`) from the latest visible states of its accepted items, applying
+  this precedence:
+  - `READY` if every accepted item has already succeeded (whether or not the
+    loadout was subsequently cancelled).
+  - `PARTIALLY_READY` if at least one accepted item succeeded and the rest
+    failed or were cancelled.
+  - `CANCELLED` if cancellation occurred and no accepted item had succeeded.
+  - `FAILED` if processing finished without any cancellation and no accepted
+    item succeeded.
 - **FR-012**: The product MUST allow a support operator to retrieve the full
   attempt history and latest failure reason for any loadout item.
 - **FR-013**: The product MUST allow a requester to cancel all outstanding
   (non-terminal) work for a loadout, while leaving already-completed and
-  already-failed items' results unchanged.
+  already-failed items' results unchanged and visible after cancellation.
 - **FR-014**: The product MUST make repeated cancellation requests for the
   same loadout safe, such that they have no additional effect and create no
   additional work.
 - **FR-015**: The product MUST prevent a cancelled item from restarting on
-  its own; it MUST only resume if the requester explicitly retries it and
-  retry is permitted for that item.
-- **FR-016**: The product MUST allow a requester to retry the failed items of
-  a loadout, creating exactly one new attempt per failed item under its
-  existing `loadoutItemId`, without repeating items that already succeeded.
+  its own. Cancellation MUST be terminal for that item: a cancelled item
+  MUST NOT become retry-eligible, and no future retry request MUST cause it
+  to resume.
+- **FR-016**: The product MUST allow a requester to retry a loadout, which
+  retries every currently-failed item within it, creating exactly one new
+  attempt per failed item under its existing `loadoutItemId`, without
+  repeating items that already succeeded. Retry MUST apply to the full set
+  of currently-failed items in the loadout; selecting a specific subset of
+  failed items to retry is not supported.
 - **FR-017**: The product MUST retain the full attempt history for a retried
   item, including all previous outcomes, when a new attempt is created.
-- **FR-018**: The product MUST prevent a repeated retry request for the same
-  loadout or item from creating duplicate attempts.
+- **FR-018**: The product MUST prevent a repeated retry request from creating
+  a duplicate attempt for an item that already has a successor attempt
+  (i.e., an item that was already retried).
 - **FR-019**: The product MUST continue to support existing single-artifact
   request and retrieval behavior unchanged for callers that do not use
   loadouts.
@@ -320,9 +383,9 @@ receive new attempts while successful items are unchanged.
 - "Terminal state" for a loadout item means any state from which the item
   will not change without an explicit requester action (e.g., completed,
   failed-and-not-yet-retried, or cancelled).
-- Retry is only meaningful for items that failed; items that completed
-  successfully are never retried, and cancelled items follow whatever retry
-  eligibility rule applies to their state at cancellation time.
+- Retry is only meaningful for items that are currently failed; items that
+  completed successfully are never retried, and cancellation is terminal —
+  a cancelled item is never retry-eligible.
 - Capacity scheduling, material inventory management, pricing/quota
   enforcement, notifications, and persistent storage design are out of scope
   for this specification, consistent with the approved Functional Spec.

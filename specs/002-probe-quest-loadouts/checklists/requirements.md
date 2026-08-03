@@ -36,5 +36,11 @@
   a deliberate scope boundary for Technical Design, not a gap in this
   specification, and is called out explicitly in the Requirements section
   and Assumptions.
+- All 10 canonical functional clarifications (identical-content definition,
+  2-10 item limit timing, always-`ACCEPTED` create response, full-set retry
+  scope, terminal cancellation, retry/cancel no-op cases, successor-attempt
+  duplicate prevention, and post-cancellation status precedence) are
+  recorded in `## Clarifications` and reflected in the relevant Functional
+  Requirements, Acceptance Scenarios, and Edge Cases.
 - All items pass; specification is ready for the Parallel SDD design-check
   gate ahead of `/speckit-plan`.
