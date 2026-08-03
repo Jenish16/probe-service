@@ -1,9 +1,10 @@
 schema_version: 2
 initiative_id: "POC-HIGH-POWER-APPROVAL"
 status: functional-approved
-updated_at: "2026-08-03T16:49:00+05:30"
+updated_at: "2026-08-03T11:47:59Z"
 pull_requests:
-  technical_spec: []
+  technical_spec:
+    - "https://github.com/Jenish16/probe-service/pull/4"
   implementation: []
 related_repositories:
   - Jenish16/forge-service
