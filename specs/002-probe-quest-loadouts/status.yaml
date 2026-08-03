@@ -1,9 +1,10 @@
 schema_version: 2
 initiative_id: "POC-QUEST-LOADOUTS"
 status: functional-approved
-updated_at: "2026-08-03T17:06:00+05:30"
+updated_at: "2026-08-03T11:47:59Z"
 pull_requests:
-  technical_spec: []
+  technical_spec:
+    - "https://github.com/Jenish16/probe-service/pull/3"
   implementation: []
 related_repositories:
   - "Jenish16/forge-service"
