@@ -1,0 +1,46 @@
+server:
+  port: 8082
+
+spring:
+  application:
+    name: probe
+
+forge:
+  rest:
+    base-url: http://localhost:8081
+    timeout-ms: 2000
+  grpc:
+    host: localhost
+    port: 9091
+    deadline-ms: 2000
+
+resilience4j:
+  circuitbreaker:
+    circuit-breaker-aspect-order: 1
+    configs:
+      default:
+        sliding-window-type: COUNT_BASED
+        sliding-window-size: 10
+        minimum-number-of-calls: 5
+        failure-rate-threshold: 50
+        wait-duration-in-open-state: 30s
+        permitted-number-of-calls-in-half-open-state: 3
+        automatic-transition-from-open-to-half-open-enabled: true
+    instances:
+      FORGE_REST:
+        base-config: default
+      FORGE_GRPC:
+        base-config: default
+  retry:
+    retry-aspect-order: 2
+    configs:
+      default:
+        max-attempts: 3
+        wait-duration: 500ms
+        enable-exponential-backoff: true
+        exponential-backoff-multiplier: 2
+    instances:
+      FORGE_REST:
+        base-config: default
+      FORGE_GRPC:
+        base-config: default
