@@ -1,0 +1,12 @@
+schema_version: 2
+initiative_id: "POC-HIGH-POWER-APPROVAL"
+status: functional-approved
+updated_at: "2026-08-03T16:49:00+05:30"
+pull_requests:
+  technical_spec: []
+  implementation: []
+related_repositories:
+  - Jenish16/forge-service
+parallel_discovery: not-run
+implementation_conflict: not-run
+counterpart_specs: []
