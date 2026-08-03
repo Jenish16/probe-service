@@ -8,4 +8,4 @@ For feature work, follow the relevant `specs/<feature>/spec.md` and `tasks.md` b
 
 ## Parallel SDD
 
-Spec Kit and OpenSpec adapters are installed (`.sdd-parallel/`, `openspec/schemas/myntra-sdd/`) but activation-pending. See the "Parallel SDD" section in `AGENTS.md` before using either framework.
+Spec Kit and OpenSpec adapters are installed (`.sdd-parallel/`, `openspec/schemas/myntra-sdd/`) and both are now ready/activated in this repo. See the "Parallel SDD" section in `AGENTS.md` for the required gates (design-check before planning, implementation-check before implementing), PR title conventions, and `status.yaml` rules before using either framework.

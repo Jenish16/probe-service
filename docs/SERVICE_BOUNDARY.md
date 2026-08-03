@@ -30,12 +30,12 @@ sequenceDiagram
     participant Probe as probe-service
     participant Forge as forge-service
 
-    Caller->>Probe: POST /probe-requests/forge-jobs/rest
+    Caller->>Probe: POST /api/v1/probe-requests/forge-jobs/rest
     Probe->>Forge: POST /api/v1/forge-jobs
     Forge-->>Probe: ForgeJob JSON
     Probe-->>Caller: ProbeForgeJobResponse
 
-    Caller->>Probe: POST /probe-requests/forge-jobs/grpc
+    Caller->>Probe: POST /api/v1/probe-requests/forge-jobs/grpc
     Probe->>Forge: CreateForgeJob gRPC
     Forge-->>Probe: ForgeJobGrpcResponse
     Probe-->>Caller: ProbeForgeJobResponse

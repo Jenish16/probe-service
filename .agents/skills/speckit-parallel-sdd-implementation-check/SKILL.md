@@ -1,0 +1,1 @@
+../../../.specify/extensions/parallel-sdd/.specify-dev/agent-commands/zed/speckit-parallel-sdd-implementation-check/SKILL.md

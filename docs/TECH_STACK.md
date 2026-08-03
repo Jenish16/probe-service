@@ -2,17 +2,19 @@
 
 | Area | Choice |
 |------|--------|
-| Language | Java (see `build.gradle.kts` toolchain) |
-| Build | Gradle (Kotlin DSL) |
-| Framework | Spring Boot |
-| Public API | Spring Web MVC (REST) |
-| Downstream REST | Spring RestClient via `BaseApiClient` |
-| Downstream gRPC | gRPC Java + protobuf |
-| Resilience | Resilience4j circuit breaker + retry (`FORGE_REST`, `FORGE_GRPC`) |
+| Language / runtime | Java 25 (Gradle toolchain, `build.gradle.kts`) |
+| Build | Gradle (Kotlin DSL), `com.google.protobuf` plugin 0.9.5 for proto codegen |
+| Framework | Spring Boot 4.0.6 |
+| Public API | Spring Web MVC (REST, JSON) |
+| Downstream REST | Spring `RestClient` (`spring-boot-starter-restclient`) via `BaseApiClient` |
+| Downstream gRPC | gRPC Java 1.69.0 + protobuf 3.25.5 (`grpc-netty-shaded`, `grpc-stub`, `grpc-protobuf`) |
+| Data stores | None — see Persistence below |
+| Messaging | None — no Kafka/queue producer or consumer in this codebase |
+| Resilience | Resilience4j 2.4.0 circuit breaker + retry (`FORGE_REST`, `FORGE_GRPC`, see `resilience4j.*` in `application.yml`) |
 | Contracts | protobuf (`proto/artifact_forge_service.proto`) |
-| Testing | JUnit 5, Spring Boot Test, MockMvc |
+| Testing | JUnit 5, Spring Boot Test, MockMvc, Mockito |
 
-Version numbers are defined in `build.gradle.kts` and the Gradle wrapper — do not hard-code versions here.
+Version numbers above are read from `build.gradle.kts`; treat that file as the source of truth if it changes.
 
 ## Persistence
 
