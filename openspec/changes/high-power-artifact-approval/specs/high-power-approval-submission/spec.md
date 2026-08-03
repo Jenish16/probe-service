@@ -26,18 +26,35 @@ immediately upon submission, regardless of power level.
 - **THEN** the requester receives a stable request reference immediately
 
 ### Requirement: Idempotent submission by requester reference
-Repeating a submission with the same requester reference and identical
-request content SHALL return the existing request rather than creating a
-new one. Reusing a requester reference with different request content
-SHALL be rejected.
+Idempotent submission SHALL apply to every requester reference regardless
+of the submitted power level. Repeating a submission with the same
+requester reference and identical request content SHALL return the
+existing request rather than creating a new one, but only while that
+existing request has not yet reached a terminal outcome. Reusing a
+requester reference with different request content while the existing
+request has not yet reached a terminal outcome SHALL be rejected. Once an
+existing request has reached a terminal outcome (`REJECTED`, `EXPIRED`,
+`CANCELLED`, or a terminal processing failure), idempotent
+duplicate-return no longer applies to further submissions using that
+requester reference; see the retry capability for the behavior that
+applies at that point.
 
 #### Scenario: Duplicate submission returns existing request
+- **GIVEN** a prior submission is not yet in a terminal outcome
 - **WHEN** a requester resubmits using the same requester reference and
-  identical request content as a prior submission
+  identical request content
 - **THEN** the existing request is returned
 - **AND** no new request is created
 
 #### Scenario: Conflicting reuse of requester reference is rejected
+- **GIVEN** a prior submission is not yet in a terminal outcome
 - **WHEN** a requester resubmits using the same requester reference but
-  different request content than a prior submission
+  different request content
 - **THEN** the resubmission is rejected
+
+#### Scenario: Idempotency applies regardless of power level
+- **WHEN** a requester resubmits an ordinary (power level 1–7) request
+  using the same requester reference and identical content as a prior,
+  not-yet-terminal submission
+- **THEN** the existing request is returned, following the same
+  idempotency rule that applies to power levels 8–10

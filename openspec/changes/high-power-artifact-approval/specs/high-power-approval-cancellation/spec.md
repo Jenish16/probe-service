@@ -21,7 +21,11 @@ A `CANCELLED` request SHALL NOT later be approved or rejected.
 ### Requirement: Cancellation after forging has begun follows processing policy
 Cancellation requested after forging has begun SHALL follow the existing
 processing cancellation policy rather than the approval cancellation
-policy described here.
+policy described here. For this purpose, forging is considered to have
+begun as soon as a request becomes `APPROVED`, even if forging work has
+not yet visibly started; the simple approval-cancellation rule (cancel
+while `PENDING_APPROVAL`, no reason required) applies only up to and
+excluding the moment of approval.
 
 #### Scenario: Cancellation attempt after processing has begun
 - **GIVEN** a request has moved beyond `PENDING_APPROVAL` and forging has
@@ -29,3 +33,11 @@ policy described here.
 - **WHEN** the requester attempts to cancel it
 - **THEN** the cancellation is handled by the existing processing
   cancellation policy, not by the approval cancellation rule
+
+#### Scenario: Cancellation attempt immediately after approval
+- **GIVEN** a request has just become `APPROVED` and forging work has not
+  yet visibly started
+- **WHEN** the requester attempts to cancel it
+- **THEN** the cancellation is handled by the existing processing
+  cancellation policy, not by the approval cancellation rule, because
+  `APPROVED` itself counts as forging having begun

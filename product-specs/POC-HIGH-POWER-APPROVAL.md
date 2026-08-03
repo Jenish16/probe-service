@@ -123,6 +123,61 @@ requesters and support operators.
     applicable, and timestamp.
 28. Support operators shall be able to retrieve history by request reference.
 
+## Clarifications
+
+The following clarifications resolve ambiguity in the numbered functional
+requirements above. They are normative and take precedence over any
+narrower reading of the requirement(s) they reference, but they do not
+modify the text of those requirements and do not introduce behavior beyond
+what those requirements already state.
+
+1. **Idempotency scope** (refines requirements 4–6). Idempotent submission
+   SHALL apply to every requester reference regardless of the submitted
+   power level, not only to power levels 8 through 10.
+2. **Idempotency while non-terminal** (refines requirements 5–6). While a
+   request's current attempt has not reached a terminal outcome, an
+   identical resubmission on the same requester reference SHALL return the
+   existing request (requirement 5), and a resubmission with different
+   content on the same requester reference SHALL be rejected
+   (requirement 6).
+3. **Retry after a terminal outcome** (refines requirement 21). Once a
+   request's current attempt reaches a terminal outcome (`REJECTED`,
+   `EXPIRED`, `CANCELLED`, or a terminal processing failure), an explicit
+   retry or resubmission SHALL create a new approval attempt rather than
+   being evaluated as a duplicate under requirements 5–6. The new attempt
+   SHALL be accepted whether it reuses the same requester reference or
+   links through the original request, and whether its content is
+   identical to or different from the prior attempt. No limit SHALL be
+   placed on the number of such retry attempts, and requirement 22
+   (approval does not carry forward) SHALL apply independently to each
+   one.
+4. **History linkage across retries** (refines requirement 23). Decision
+   history SHALL link every attempt described in clarification 3,
+   regardless of how many retry attempts have occurred.
+5. **Cancellation window** (refines requirement 18). The approval-style
+   cancellation described in requirement 18 SHALL apply only while the
+   request is `PENDING_APPROVAL`.
+6. **Cancellation handoff point** (refines requirement 20). For
+   requirement 20, a request SHALL be considered to have begun forging as
+   soon as it becomes `APPROVED`, even before forging work visibly
+   starts; from that point forward, cancellation SHALL follow the normal
+   processing cancellation policy rather than requirement 18.
+7. **Safe-repeat scope** (refines requirement 12). Requirement 12 SHALL be
+   read as: repeating a decision of the same type (an approval after an
+   existing approval, or a rejection after an existing rejection) on a
+   request that already carries that terminal decision SHALL leave the
+   request's state unchanged and SHALL NOT produce an error.
+8. **Reason retention on repeated rejection** (refines requirement 12).
+   When a repeated rejection under requirement 12 supplies a reason
+   different from the one already recorded, the originally recorded
+   reason SHALL be retained and the new reason text SHALL NOT be
+   recorded.
+9. **Competing decision scope** (refines requirement 13). Requirement 13
+   SHALL apply to any decision of a different type submitted after a
+   request already carries a terminal decision (for example, an approval
+   submitted after a rejection, or a rejection submitted after an
+   approval).
+
 ## Acceptance scenarios
 
 ### Ordinary artifact

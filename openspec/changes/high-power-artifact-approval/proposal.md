@@ -15,20 +15,30 @@ step before a high-power request begins forging, while ordinary requests
   its processing/approval state, list pending high-power requests oldest
   first, approve a pending request, reject a pending request with a reason,
   cancel a pending request, and retrieve decision history.
-- Enforce idempotent submission: repeating the same requester reference
-  with identical content returns the existing request; reusing it with
-  different content is rejected.
+- Enforce idempotent submission for every requester reference regardless
+  of power level, while a request is not yet terminal: repeating the same
+  requester reference with identical content returns the existing
+  request; reusing it with different content is rejected. Idempotent
+  duplicate-return stops applying once a request reaches a terminal
+  outcome — any further submission tied to that requester reference is
+  then treated as a new retry attempt (see below), not a duplicate.
 - Enforce a single effective terminal decision per request: repeating the
-  same approval/rejection is safe, a competing decision after a terminal
-  decision is rejected, and decisions received after a 30-minute approval
-  window (expiry) are rejected.
+  same approval is safe; repeating a rejection is safe and keeps the
+  originally recorded reason even if a later repeat supplies a different
+  reason text; a competing decision after a terminal decision is
+  rejected; and decisions received after a 30-minute approval window
+  (expiry) are rejected.
 - Support requester cancellation while approval is pending; cancellation
-  after forging has begun follows the existing processing cancellation
-  policy instead.
-- Ensure retrying or resubmitting a rejected/expired/failed high-power
-  artifact creates a new approval attempt rather than reusing a prior
-  decision, while linking decision history across attempts that share a
-  requester reference or original request.
+  is handled by the existing processing cancellation policy, not the
+  approval cancellation rule, from the moment a request becomes
+  `APPROVED` onward (approval itself counts as forging having begun, even
+  before forging work visibly starts).
+- Ensure retrying or resubmitting a rejected, expired, cancelled, or
+  failed high-power artifact creates a new, independent approval attempt
+  rather than reusing a prior decision — regardless of whether the retry
+  reuses the same requester reference or repeats the same content, and
+  with no limit on the number of retries — while linking decision history
+  across attempts that share a requester reference or original request.
 - Preserve visibility of both approval status and processing status to
   requesters, including rejection reasons and expiry times, and make
   decision history retrievable by request reference for support operators.
@@ -58,11 +68,14 @@ ownership is deferred to the Technical Spec.
   expiry.
 - `high-power-approval-cancellation`: Requester cancellation while
   pending, the resulting `CANCELLED` terminal state, and the handoff to
-  the normal processing cancellation policy once forging has begun.
-- `high-power-approval-retry`: New approval attempts on retry/resubmission
-  of a rejected, expired, or failed high-power artifact, non-inheritance
-  of a prior attempt's approval, and decision-history linkage across
-  attempts sharing a requester reference or original request.
+  the normal processing cancellation policy from the moment of approval
+  onward (approval counts as forging having begun).
+- `high-power-approval-retry`: New, independent approval attempts on
+  retry/resubmission of a rejected, expired, cancelled, or failed
+  high-power artifact (regardless of requester-reference or content
+  reuse, with no retry limit), non-inheritance of a prior attempt's
+  approval, and decision-history linkage across attempts sharing a
+  requester reference or original request.
 - `high-power-approval-visibility-audit`: Requester-facing approval and
   processing status (including rejection reason and expiry time) and
   support-operator retrieval of full decision history (operator, decision,

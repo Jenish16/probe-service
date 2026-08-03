@@ -41,15 +41,32 @@ a reason for the rejection.
 A request SHALL receive only one effective terminal approval decision.
 Repeating the same approval or rejection decision on a request that
 already carries that terminal decision SHALL be safe and SHALL NOT change
-the outcome. A competing decision submitted after a request already has a
-terminal decision SHALL be rejected.
+the outcome. For rejection specifically, a repeated rejection on an
+already-`REJECTED` request is treated as the same decision regardless of
+the reason text supplied on the repeat — the originally recorded reason
+is retained and the new reason text is ignored. A competing decision
+submitted after a request already has a terminal decision (for example,
+an approval after a rejection) SHALL be rejected.
 
-#### Scenario: Repeating the same decision is safe
-- **WHEN** an operator submits the same approval (or the same rejection
-  with the same reason) that already resulted in a request's current
-  terminal state
+#### Scenario: Repeating the same approval is safe
+- **WHEN** an operator submits an approval on a request that is already
+  `APPROVED`
 - **THEN** the request's state is unchanged
 - **AND** no error results from the repeated decision
+
+#### Scenario: Repeating rejection with the same reason is safe
+- **WHEN** an operator submits a rejection with the same reason on a
+  request that is already `REJECTED` with that reason
+- **THEN** the request's state is unchanged
+- **AND** no error results from the repeated decision
+
+#### Scenario: Repeating rejection with a different reason is still safe
+- **WHEN** an operator submits a rejection with a different reason on a
+  request that is already `REJECTED`
+- **THEN** the request's state is unchanged
+- **AND** the originally recorded rejection reason is retained
+- **AND** the new reason text is not recorded as the request's rejection
+  reason
 
 #### Scenario: Competing decision after a terminal decision is rejected
 - **WHEN** an operator submits a decision that conflicts with a request's
