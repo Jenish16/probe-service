@@ -62,6 +62,20 @@ public abstract class BaseApiClient {
 		}
 	}
 
+	protected <R> HttpResult<R> postNoBody(String uriTemplate, Class<R> responseType, Object... uriVariables) {
+		log.info("Calling {} → POST {}", serviceName, uriTemplate);
+		try {
+			return restClient
+					.post()
+					.uri(uriTemplate, uriVariables)
+					.exchange((request, response) -> toHttpResult(response, responseType));
+		} catch (ForgeRemoteCallException ex) {
+			throw ex;
+		} catch (Exception ex) {
+			throw handleNetworkException(ex, "POST", uriTemplate);
+		}
+	}
+
 	protected <T> T handleResponse(HttpResult<T> result, String context) {
 		if (result.status().is2xxSuccessful()) {
 			return result.body();

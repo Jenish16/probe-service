@@ -2,7 +2,7 @@
 
 ## Entities
 
-None. `probe-service` holds no persisted domain entities — a scan of `domain/`, the (absent) `repository/` package, and `resources/` confirms there is no database, cache, or in-memory store of its own. All request/response types (`CreateProbeForgeJobRequest`, `ProbeForgeJobResponse`, `ForgeCreateJobRestRequest`, `ForgeJobRestResponse`) are transient DTOs, not entities — the service is a stateless caller.
+None. `probe-service` holds no persisted domain entities — a scan of `domain/`, the (absent) `repository/` package, and `resources/` confirms there is no database, cache, or in-memory store of its own. All request/response types (`CreateProbeForgeJobRequest`, `ProbeForgeJobResponse`, `ForgeCreateJobRestRequest`, `ForgeJobRestResponse`, and the Quest Loadout Fulfilment DTOs — `CreateProbeLoadoutRequest`, `ProbeLoadoutResponse`, `ProbeLoadoutAttemptHistoryResponse`, and their downstream `Forge*` counterparts) are transient DTOs, not entities — the service is a stateless caller.
 
 ## Enums
 
@@ -12,7 +12,7 @@ None. `probe-service` holds no persisted domain entities — a scan of `domain/`
 | `ForgeMaterial` | `MITHRIL`, `ELVEN_STEEL`, `DWARVEN_IRON`, `OBSIDIAN`, `SILVERWOOD` | `domain/ForgeMaterial.java` | Same duplication note as `ArtifactType`. |
 | `ForgeTransport` | `REST`, `GRPC` | `domain/ForgeTransport.java` | probe-service-specific; tags `ProbeForgeJobResponse` with which downstream transport served the request. |
 
-Note: unlike forge-service, `probe-service` does not define its own `ForgeJobStatus` enum. `ProbeForgeJobResponse.status` is a raw `String`, passed through opaquely from whatever forge-service returns (`ForgeJobRestResponse.status` / gRPC `status` field are also `String`). This is a deliberate (if implicit) decoupling — probe-service does not need to know forge-service's status values to relay them.
+Note: unlike forge-service, `probe-service` does not define its own `ForgeJobStatus` enum. `ProbeForgeJobResponse.status` is a raw `String`, passed through opaquely from whatever forge-service returns (`ForgeJobRestResponse.status` / gRPC `status` field are also `String`). This is a deliberate (if implicit) decoupling — probe-service does not need to know forge-service's status values to relay them. The same opaque-`String` pass-through is used for every Loadout/item/attempt status field (`ProbeLoadoutResponse.status`, `ProbeLoadoutItemResponse.status`/`approvalStatus`, `ProbeLoadoutAttemptResponse.status`/`approvalStatus`) — `probe-service` defines no `LoadoutStatus` enum either. Loadout item request fields (`ProbeLoadoutItemRequest.artifactType`/`material`) are likewise raw, unvalidated `String`s rather than the `ArtifactType`/`ForgeMaterial` enums used by the single-artifact request, since `forge-service` validates them itself and reports invalid values as individual rejected items.
 
 ## State transitions
 

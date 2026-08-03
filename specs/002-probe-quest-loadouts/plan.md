@@ -110,7 +110,7 @@ sequenceDiagram
     participant FS as forge-service
 
     Requester->>PC: POST /api/v1/probe-requests/loadouts/{rest|grpc}
-    PC->>PC: Bean Validation (2-10 items, required fields)
+    PC->>PC: Bean Validation (required fields only, no item-level checks)
     PC->>PS: create(request)
     alt rest suffix
         PS->>M: toForgeCreateLoadoutRestRequest(request)
@@ -125,7 +125,7 @@ sequenceDiagram
     end
     PS->>M: toProbeLoadoutResponse(forgeResponse, transport)
     PS-->>PC: ProbeLoadoutResponse
-    PC-->>Requester: 201/200/400/409
+    PC-->>Requester: 201 (always, see contracts doc)/400/409
 ```
 
 `probe-service` adds, per the existing single-artifact layering

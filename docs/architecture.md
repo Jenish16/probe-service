@@ -2,24 +2,28 @@
 
 ## System purpose
 
-`probe-service` is the caller-side Spring Boot service in the Code Istari learning POC. It exposes its own public REST API and, on behalf of an external caller, delegates forge-job creation/retrieval to `forge-service` over either REST or gRPC — the caller picks the transport by hitting a different endpoint.
+`probe-service` is the caller-side Spring Boot service in the Code Istari learning POC. It exposes its own public REST API and, on behalf of an external caller, delegates forge-job creation/retrieval (and, since the Quest Loadout Fulfilment feature, Loadout create/get/cancel/retry/attempt-history) to `forge-service` over either REST or gRPC — the caller picks the transport by hitting a different endpoint.
 
 ## Module/package map
 
 | Package | Responsibility |
 |---|---|
 | `com.codeistari.probe` | Application bootstrap (`ProbeServiceApplication`) |
-| `com.codeistari.probe.controller` | Public REST entrypoint (`ProbeRequestController`) |
-| `com.codeistari.probe.service` | Orchestration (`ProbeRequestService`) |
-| `com.codeistari.probe.client` | `ForgeJobClient` interface; `BaseApiClient` shared REST-call helper |
-| `com.codeistari.probe.client.rest` | `RestForgeJobClient` + `RestForgeClientConfig` |
-| `com.codeistari.probe.client.grpc` | `GrpcForgeJobClient` + `GrpcForgeClientConfig` |
-| `com.codeistari.probe.mapper` | `ProbeRequestMapper` — public DTO ↔ downstream DTO/proto mapping |
+| `com.codeistari.probe.controller` | Public REST entrypoints (`ProbeRequestController` for single forge-jobs, `ProbeLoadoutController` for Loadouts) |
+| `com.codeistari.probe.service` | Orchestration (`ProbeRequestService`, `ProbeLoadoutService`) |
+| `com.codeistari.probe.client` | `ForgeJobClient`/`LoadoutClient` interfaces; `BaseApiClient` shared REST-call helper |
+| `com.codeistari.probe.client.rest` | `RestForgeJobClient`, `RestLoadoutClient` |
+| `com.codeistari.probe.client.grpc` | `GrpcForgeJobClient`, `GrpcLoadoutClient` + `GrpcForgeClientConfig` (shared `ManagedChannel`, one blocking stub per gRPC service) |
+| `com.codeistari.probe.mapper` | `ProbeRequestMapper`, `ProbeLoadoutMapper` — public DTO ↔ downstream DTO/proto mapping |
 | `com.codeistari.probe.config` | `ForgeClientProperties` (`forge.*` config), `ResilienceConfig` (Resilience4j predicates), `RestClientFactory` |
-| `com.codeistari.probe.dto.request` / `.dto.response` | Public API DTOs (`CreateProbeForgeJobRequest`, `ProbeForgeJobResponse`) |
-| `com.codeistari.probe.dto.client.forge.request` / `.response` | Downstream forge-service REST DTOs (`ForgeCreateJobRestRequest`, `ForgeJobRestResponse`) — deliberately kept separate from the public DTOs |
+| `com.codeistari.probe.dto.request` / `.dto.response` | Public API DTOs — single forge-job (`CreateProbeForgeJobRequest`, `ProbeForgeJobResponse`) and Loadout (`CreateProbeLoadoutRequest`, `ProbeLoadoutResponse`, `RetryProbeLoadoutRequest`, attempt-history DTOs) |
+| `com.codeistari.probe.dto.client.forge.request` / `.response` | Downstream forge-service REST DTOs, mirroring both the single-artifact and Loadout REST contracts — deliberately kept separate from the public DTOs |
 | `com.codeistari.probe.exception` | `ForgeRemoteCallException`, `ErrorResponse`, `GlobalExceptionHandler` |
 | `com.codeistari.probe.domain` | `ArtifactType`, `ForgeMaterial` (mirrored from forge-service), `ForgeTransport` (`REST`/`GRPC`, probe-specific) |
+
+### Quest Loadout Fulfilment (`specs/002-probe-quest-loadouts/`)
+
+`probe-service` is a pure, stateless pass-through facade over `forge-service`'s already-fixed `/api/v1/loadouts/*` REST and `LoadoutService` gRPC contract (research.md D1) — it performs no Loadout business logic, aggregation, or item-level validation of its own. Loadout item request fields (`artifactType`, `material`, `powerLevel`) are deliberately raw/unvalidated at `probe-service` (no Bean Validation, no typed enums) so an invalid item reaches `forge-service`'s per-item rejection reporting instead of failing the whole request at `probe-service` (research.md D7, Gate 2 IC-001). `GrpcLoadoutClient` has its own gRPC-status-mapping method, adding `ALREADY_EXISTS → 409 Conflict` beyond `GrpcForgeJobClient`'s cases, since the Loadout gRPC API introduces an idempotency-conflict scenario the single-artifact API doesn't have (research.md D11, Gate 2 IC-002).
 
 ## Request lifecycle
 

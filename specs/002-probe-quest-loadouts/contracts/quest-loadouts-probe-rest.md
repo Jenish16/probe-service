@@ -36,14 +36,18 @@ Create a loadout (User Story 1).
   "requestedBy": "string, required",
   "items": [
     {
-      "artifactName": "string, required",
-      "artifactType": "RING | BLADE | STAFF | AMULET | SHIELD | SCROLL",
-      "material": "MITHRIL | ELVEN_STEEL | DWARVEN_IRON | OBSIDIAN | SILVERWOOD",
-      "powerLevel": "int 1-10, required"
+      "artifactName": "string",
+      "artifactType": "string",
+      "material": "string",
+      "powerLevel": "int"
     }
   ]
 }
 ```
+
+Item fields are raw, unvalidated strings/ints at `probe-service` (research.md D7,
+revised by Gate 2 IC-001) — `forge-service` is the sole source of truth for
+which `artifactType`/`material` values and `powerLevel` range are valid.
 
 `items` MUST be non-empty (`probe-service`'s only structural check on this
 list is `@NotNull @NotEmpty`). The 2–10 item-count bound (FR-001) and all
@@ -53,8 +57,17 @@ raw, unvalidated fields regardless of its own opinion on validity (research.md
 D7, revised by Gate 2 IC-001), so that `forge-service`'s per-item rejection
 reporting is reachable for every request.
 
-**Response — `201 Created`** (new loadout) or `200 OK` (identical
-`requestReference` resubmission, FR-008) — `ProbeLoadoutResponse`
+**Response — `201 Created`** — `ProbeLoadoutResponse`
+
+`probe-service` always returns `201 Created` (matching the existing
+single-artifact create endpoint's convention), regardless of whether
+`forge-service` reports `201`/`200` for this `requestReference`
+(idempotent-replay detection). This is a deliberate simplification: unlike
+REST, `forge-service`'s gRPC `LoadoutGrpcResponse` carries no
+new-vs-replayed signal at all, so a REST-only distinction here would break
+FR-020 (REST/gRPC parity) — no functional requirement depends on the HTTP
+status distinguishing a new loadout from an idempotent replay, since the
+response body's `loadoutId`/`status` already fully describe the result.
 
 ```json
 {

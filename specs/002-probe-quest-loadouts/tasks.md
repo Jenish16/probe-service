@@ -35,11 +35,11 @@ Single Java Spring Boot project (existing `probe-service` layout,
 
 **Purpose**: Bring in the downstream gRPC contract this feature depends on.
 
-- [ ] T001 Copy `forge-service`'s `quest_loadout_service.proto` (from
+- [X] T001 Copy `forge-service`'s `quest_loadout_service.proto` (from
       `Jenish16/forge-service#4`,
       `specs/002-quest-loadout-fulfilment/contracts/quest_loadout_service.proto`)
       verbatim into `proto/quest_loadout_service.proto` (research.md D5)
-- [ ] T002 Run `./gradlew compileJava` and confirm the `com.google.protobuf`
+- [X] T002 Run `./gradlew compileJava` and confirm the `com.google.protobuf`
       Gradle plugin (already configured with `srcDir("proto")` in
       `build.gradle.kts`) generates the `LoadoutServiceGrpc` client stub and
       message types with no build configuration changes needed
@@ -57,20 +57,20 @@ every client implementation goes through one shared interface).
 
 **⚠️ CRITICAL**: Must complete before any user story phase begins.
 
-- [ ] T003 Create `client/LoadoutClient.java` interface declaring
+- [X] T003 Create `client/LoadoutClient.java` interface declaring
       `createLoadout`, `getLoadout`, `cancelLoadout`, `retryLoadout`, and
       `getItemAttempts` signatures (mirrors `client/ForgeJobClient.java`,
       contracts/quest-loadouts-probe-rest.md)
-- [ ] T004 [P] Create `dto/response/ProbeLoadoutResponse.java` and
+- [X] T004 [P] Create `dto/response/ProbeLoadoutResponse.java` and
       `dto/response/ProbeLoadoutItemResponse.java` per data-model.md (opaque
       `String` status fields, research.md D3; `transport` field reuses
       `domain.ForgeTransport`)
-- [ ] T005 [P] Create
+- [X] T005 [P] Create
       `dto/client/forge/response/ForgeLoadoutRestResponse.java` and
       `dto/client/forge/response/ForgeLoadoutItemRestResponse.java` mirroring
       `forge-service`'s REST response shape (data-model.md, kept separate
       from the public DTOs per `AGENTS.md`)
-- [ ] T006 Create `mapper/ProbeLoadoutMapper.java` (empty class, `@Component`)
+- [X] T006 Create `mapper/ProbeLoadoutMapper.java` (empty class, `@Component`)
       to hold the per-story mapping methods added below
 
 **Checkpoint**: Foundation ready — user story implementation can begin.
@@ -90,7 +90,7 @@ same `loadoutId`); resubmit with different content and confirm `409`.
 
 ### Implementation for User Story 1
 
-- [ ] T007 [P] [US1] Create `dto/request/CreateProbeLoadoutRequest.java`
+- [X] T007 [P] [US1] Create `dto/request/CreateProbeLoadoutRequest.java`
       (`@NotBlank` on `requestReference`/`loadoutName`/`requestedBy`,
       `@NotNull @NotEmpty @Valid` on `items` — no `@Size` bound) and
       `dto/request/ProbeLoadoutItemRequest.java` (raw, unvalidated
@@ -99,47 +99,47 @@ same `loadoutId`); resubmit with different content and confirm `409`.
       by Gate 2 IC-001 — mirrors `forge-service`'s `LoadoutItemRequest`
       exactly so invalid items reach `forge-service`'s per-item rejection
       reporting instead of failing the whole request at `probe-service`)
-- [ ] T008 [P] [US1] Create
+- [X] T008 [P] [US1] Create
       `dto/client/forge/request/ForgeCreateLoadoutRestRequest.java` and
       `dto/client/forge/request/ForgeLoadoutItemRestRequest.java` mirroring
       `forge-service`'s `POST /api/v1/loadouts` request shape
-- [ ] T009 [P] [US1] Create `dto/response/ProbeRejectedLoadoutItemResponse.java`
+- [X] T009 [P] [US1] Create `dto/response/ProbeRejectedLoadoutItemResponse.java`
       and `dto/client/forge/response/ForgeRejectedLoadoutItemRestResponse.java`
       per data-model.md
-- [ ] T010 [US1] Implement `createLoadout` in `client/rest/RestLoadoutClient.java`
+- [X] T010 [US1] Implement `createLoadout` in `client/rest/RestLoadoutClient.java`
       (extends `BaseApiClient`, implements `LoadoutClient`; `POST
       /api/v1/loadouts`; `@CircuitBreaker(name = "FORGE_REST")` /
       `@Retry(name = "FORGE_REST")`, reusing the existing instances per
       research.md D4) — depends on T003, T007, T008
-- [ ] T011 [US1] Implement `createLoadout` in `client/grpc/GrpcLoadoutClient.java`
+- [X] T011 [US1] Implement `createLoadout` in `client/grpc/GrpcLoadoutClient.java`
       (`LoadoutServiceGrpc` stub; `@CircuitBreaker(name = "FORGE_GRPC")` /
       `@Retry(name = "FORGE_GRPC")`) and its own gRPC-status-mapping method
       (mirrors `GrpcForgeJobClient.mapGrpcException`'s cases, plus
       `ALREADY_EXISTS → HttpStatus.CONFLICT`, research.md D11/Gate 2 IC-002)
       — depends on T002, T003, T007
-- [ ] T012 [US1] Add `toForgeCreateLoadoutRestRequest`,
+- [X] T012 [US1] Add `toForgeCreateLoadoutRestRequest`,
       `toCreateLoadoutGrpcRequest`, and `toProbeLoadoutResponse(...)` (REST
       and gRPC overloads, covering `rejectedItems` mapping) to
       `mapper/ProbeLoadoutMapper.java` — depends on T004, T006, T007, T008, T009
-- [ ] T013 [US1] Create `service/ProbeLoadoutService.java` with
+- [X] T013 [US1] Create `service/ProbeLoadoutService.java` with
       `createLoadoutViaRest`/`createLoadoutViaGrpc` — depends on T010, T011, T012
-- [ ] T014 [US1] Create `controller/ProbeLoadoutController.java` with
+- [X] T014 [US1] Create `controller/ProbeLoadoutController.java` with
       `POST /api/v1/probe-requests/loadouts/{rest,grpc}`
       (`@Valid @RequestBody`, `@ResponseStatus(HttpStatus.CREATED)`) —
       depends on T013
-- [ ] T015 [P] [US1] Add create-flow test cases to
+- [X] T015 [P] [US1] Add create-flow test cases to
       `src/test/java/com/codeistari/probe/mapper/ProbeLoadoutMapperTest.java`
       (rest + gRPC request/response mapping, `rejectedItems`) — depends on T012
-- [ ] T016 [P] [US1] Add create-flow test cases to
+- [X] T016 [P] [US1] Add create-flow test cases to
       `src/test/java/com/codeistari/probe/client/rest/RestLoadoutClientTest.java`
       (`201`, idempotent `200`, `400`, `409` forwarding) — depends on T010
-- [ ] T017 [P] [US1] Add create-flow test cases to
+- [X] T017 [P] [US1] Add create-flow test cases to
       `src/test/java/com/codeistari/probe/client/grpc/GrpcLoadoutClientTest.java`,
       including a case asserting `ALREADY_EXISTS` maps to `409 Conflict`
       (research.md D11/Gate 2 IC-002) — depends on T011
-- [ ] T018 [P] [US1] Add create-flow test cases to
+- [X] T018 [P] [US1] Add create-flow test cases to
       `src/test/java/com/codeistari/probe/service/ProbeLoadoutServiceTest.java` — depends on T013
-- [ ] T019 [P] [US1] Add create-flow test cases to
+- [X] T019 [P] [US1] Add create-flow test cases to
       `src/test/java/com/codeistari/probe/controller/ProbeLoadoutControllerTest.java`,
       including a case asserting a mixed valid/invalid-item request (e.g. an
       out-of-range `powerLevel`) is forwarded to `forge-service` and comes
@@ -163,21 +163,21 @@ precedence (FR-011).
 
 ### Implementation for User Story 2
 
-- [ ] T020 [US2] Implement `getLoadout` in `client/rest/RestLoadoutClient.java`
+- [X] T020 [US2] Implement `getLoadout` in `client/rest/RestLoadoutClient.java`
       (`GET /api/v1/loadouts/{loadoutId}`, same resilience instances as
       T010) — depends on T010
-- [ ] T021 [US2] Implement `getLoadout` in `client/grpc/GrpcLoadoutClient.java` — depends on T011
-- [ ] T022 [US2] Add `getLoadoutViaRest`/`getLoadoutViaGrpc` to
+- [X] T021 [US2] Implement `getLoadout` in `client/grpc/GrpcLoadoutClient.java` — depends on T011
+- [X] T022 [US2] Add `getLoadoutViaRest`/`getLoadoutViaGrpc` to
       `service/ProbeLoadoutService.java` (reuses
       `toProbeLoadoutResponse(...)` from T012 — no new mapper methods
       needed since the response shape is identical to create's) — depends on T013, T020, T021
-- [ ] T023 [US2] Add `GET /api/v1/probe-requests/loadouts/{loadoutId}/{rest,grpc}`
+- [X] T023 [US2] Add `GET /api/v1/probe-requests/loadouts/{loadoutId}/{rest,grpc}`
       to `controller/ProbeLoadoutController.java` — depends on T014, T022
-- [ ] T024 [P] [US2] Add retrieval test cases to `RestLoadoutClientTest.java`
+- [X] T024 [P] [US2] Add retrieval test cases to `RestLoadoutClientTest.java`
       (`200`, `404`) — depends on T020
-- [ ] T025 [P] [US2] Add retrieval test cases to `GrpcLoadoutClientTest.java` — depends on T021
-- [ ] T026 [P] [US2] Add retrieval test cases to `ProbeLoadoutServiceTest.java` — depends on T022
-- [ ] T027 [P] [US2] Add retrieval test cases to `ProbeLoadoutControllerTest.java`
+- [X] T025 [P] [US2] Add retrieval test cases to `GrpcLoadoutClientTest.java` — depends on T021
+- [X] T026 [P] [US2] Add retrieval test cases to `ProbeLoadoutServiceTest.java` — depends on T022
+- [X] T027 [P] [US2] Add retrieval test cases to `ProbeLoadoutControllerTest.java`
       (status precedence scenarios from spec.md User Story 2) — depends on T023
 
 **Checkpoint**: User Stories 1 and 2 both independently functional — this
@@ -195,32 +195,32 @@ retrieve its attempt history, confirm the failure reason is visible.
 
 ### Implementation for User Story 3
 
-- [ ] T028 [P] [US3] Create
+- [X] T028 [P] [US3] Create
       `dto/response/ProbeLoadoutAttemptHistoryResponse.java` and
       `dto/response/ProbeLoadoutAttemptResponse.java` per data-model.md
-- [ ] T029 [P] [US3] Create
+- [X] T029 [P] [US3] Create
       `dto/client/forge/response/ForgeLoadoutAttemptRestResponse.java`
       mirroring `forge-service`'s attempt-history response shape
-- [ ] T030 [US3] Implement `getItemAttempts` in
+- [X] T030 [US3] Implement `getItemAttempts` in
       `client/rest/RestLoadoutClient.java` (`GET
       /api/v1/loadouts/{loadoutId}/items/{loadoutItemId}/attempts`) —
       depends on T003, T028, T029
-- [ ] T031 [US3] Implement `getItemAttempts` in
+- [X] T031 [US3] Implement `getItemAttempts` in
       `client/grpc/GrpcLoadoutClient.java` — depends on T003, T028
-- [ ] T032 [US3] Add attempt-history mapping methods to
+- [X] T032 [US3] Add attempt-history mapping methods to
       `mapper/ProbeLoadoutMapper.java` — depends on T006, T028, T029
-- [ ] T033 [US3] Add `getItemAttemptsViaRest`/`getItemAttemptsViaGrpc` to
+- [X] T033 [US3] Add `getItemAttemptsViaRest`/`getItemAttemptsViaGrpc` to
       `service/ProbeLoadoutService.java` — depends on T030, T031, T032
-- [ ] T034 [US3] Add `GET /api/v1/probe-requests/loadouts/{loadoutId}/items/{loadoutItemId}/attempts/{rest,grpc}`
+- [X] T034 [US3] Add `GET /api/v1/probe-requests/loadouts/{loadoutId}/items/{loadoutItemId}/attempts/{rest,grpc}`
       to `controller/ProbeLoadoutController.java` — depends on T033
-- [ ] T035 [P] [US3] Add attempt-history test cases to
+- [X] T035 [P] [US3] Add attempt-history test cases to
       `ProbeLoadoutMapperTest.java` — depends on T032
-- [ ] T036 [P] [US3] Add attempt-history test cases to
+- [X] T036 [P] [US3] Add attempt-history test cases to
       `RestLoadoutClientTest.java` (ordering oldest → newest, `404`) —
       depends on T030
-- [ ] T037 [P] [US3] Add attempt-history test cases to
+- [X] T037 [P] [US3] Add attempt-history test cases to
       `GrpcLoadoutClientTest.java` — depends on T031
-- [ ] T038 [P] [US3] Add attempt-history test cases to
+- [X] T038 [P] [US3] Add attempt-history test cases to
       `ProbeLoadoutServiceTest.java` and `ProbeLoadoutControllerTest.java`
       (both failed-then-retried-successfully scenarios from spec.md User
       Story 3) — depends on T033, T034
@@ -241,21 +241,21 @@ becomes `CANCELLED`, confirm repeated cancellation is a no-op (FR-014).
 
 ### Implementation for User Story 4
 
-- [ ] T039 [US4] Implement `cancelLoadout` in
+- [X] T039 [US4] Implement `cancelLoadout` in
       `client/rest/RestLoadoutClient.java` (`POST
       /api/v1/loadouts/{loadoutId}/cancel`, no request body; reuses
       `ForgeLoadoutRestResponse` from T005) — depends on T003, T005
-- [ ] T040 [US4] Implement `cancelLoadout` in
+- [X] T040 [US4] Implement `cancelLoadout` in
       `client/grpc/GrpcLoadoutClient.java` — depends on T003
-- [ ] T041 [US4] Add `cancelLoadoutViaRest`/`cancelLoadoutViaGrpc` to
+- [X] T041 [US4] Add `cancelLoadoutViaRest`/`cancelLoadoutViaGrpc` to
       `service/ProbeLoadoutService.java` (reuses `toProbeLoadoutResponse(...)`
       from T012 — response shape identical to get) — depends on T013, T039, T040
-- [ ] T042 [US4] Add `POST /api/v1/probe-requests/loadouts/{loadoutId}/cancel/{rest,grpc}`
+- [X] T042 [US4] Add `POST /api/v1/probe-requests/loadouts/{loadoutId}/cancel/{rest,grpc}`
       to `controller/ProbeLoadoutController.java` — depends on T014, T041
-- [ ] T043 [P] [US4] Add cancellation test cases to `RestLoadoutClientTest.java`
+- [X] T043 [P] [US4] Add cancellation test cases to `RestLoadoutClientTest.java`
       (`200` including no-op, `404`) — depends on T039
-- [ ] T044 [P] [US4] Add cancellation test cases to `GrpcLoadoutClientTest.java` — depends on T040
-- [ ] T045 [P] [US4] Add cancellation test cases to `ProbeLoadoutServiceTest.java`
+- [X] T044 [P] [US4] Add cancellation test cases to `GrpcLoadoutClientTest.java` — depends on T040
+- [X] T045 [P] [US4] Add cancellation test cases to `ProbeLoadoutServiceTest.java`
       and `ProbeLoadoutControllerTest.java` (all four spec.md User Story 4
       acceptance scenarios, including terminal-cancelled-item behavior
       FR-015) — depends on T041, T042
@@ -277,7 +277,7 @@ endpoint).
 
 ### Implementation for User Story 5
 
-- [ ] T046 [P] [US5] Create `dto/request/RetryProbeLoadoutRequest.java` and
+- [X] T046 [P] [US5] Create `dto/request/RetryProbeLoadoutRequest.java` and
       `dto/request/RetryProbeLoadoutItemRequest.java` per data-model.md
       (`loadoutItemId` required via `@NotBlank`; `artifactName`/
       `artifactType`/`material`/`powerLevel` are raw, optional, unvalidated
@@ -285,29 +285,29 @@ endpoint).
       IC-001 — mirrors `forge-service`'s `RetryLoadoutItemRequest` exactly
       so an invalid correction value reaches `forge-service`'s own error
       handling instead of failing at `probe-service`)
-- [ ] T047 [P] [US5] Create
+- [X] T047 [P] [US5] Create
       `dto/client/forge/request/ForgeRetryLoadoutRestRequest.java` and
       `dto/client/forge/request/ForgeRetryLoadoutItemRestRequest.java`
       mirroring `forge-service`'s retry request shape
-- [ ] T048 [US5] Implement `retryLoadout` in
+- [X] T048 [US5] Implement `retryLoadout` in
       `client/rest/RestLoadoutClient.java` (`POST
       /api/v1/loadouts/{loadoutId}/retry`) — depends on T003, T046, T047
-- [ ] T049 [US5] Implement `retryLoadout` in
+- [X] T049 [US5] Implement `retryLoadout` in
       `client/grpc/GrpcLoadoutClient.java` (reuses the gRPC-status-mapping
       method added in T011) — depends on T003, T011, T046
-- [ ] T050 [US5] Add `toForgeRetryLoadoutRestRequest`/
+- [X] T050 [US5] Add `toForgeRetryLoadoutRestRequest`/
       `toRetryLoadoutGrpcRequest` to `mapper/ProbeLoadoutMapper.java` —
       depends on T006, T046, T047
-- [ ] T051 [US5] Add `retryLoadoutViaRest`/`retryLoadoutViaGrpc` to
+- [X] T051 [US5] Add `retryLoadoutViaRest`/`retryLoadoutViaGrpc` to
       `service/ProbeLoadoutService.java` — depends on T013, T048, T049, T050
-- [ ] T052 [US5] Add `POST /api/v1/probe-requests/loadouts/{loadoutId}/retry/{rest,grpc}`
+- [X] T052 [US5] Add `POST /api/v1/probe-requests/loadouts/{loadoutId}/retry/{rest,grpc}`
       to `controller/ProbeLoadoutController.java` (`@Valid @RequestBody`) —
       depends on T014, T051
-- [ ] T053 [P] [US5] Add retry test cases to `ProbeLoadoutMapperTest.java` — depends on T050
-- [ ] T054 [P] [US5] Add retry test cases to `RestLoadoutClientTest.java`
+- [X] T053 [P] [US5] Add retry test cases to `ProbeLoadoutMapperTest.java` — depends on T050
+- [X] T054 [P] [US5] Add retry test cases to `RestLoadoutClientTest.java`
       (`200`, `400` for incomplete/ineligible items, `404`) — depends on T048
-- [ ] T055 [P] [US5] Add retry test cases to `GrpcLoadoutClientTest.java` — depends on T049
-- [ ] T056 [P] [US5] Add retry test cases to `ProbeLoadoutServiceTest.java`
+- [X] T055 [P] [US5] Add retry test cases to `GrpcLoadoutClientTest.java` — depends on T049
+- [X] T056 [P] [US5] Add retry test cases to `ProbeLoadoutServiceTest.java`
       and `ProbeLoadoutControllerTest.java` (all three spec.md User Story 5
       acceptance scenarios, including no-duplicate-attempt FR-018) —
       depends on T051, T052
@@ -320,20 +320,20 @@ endpoint).
 
 **Purpose**: Documentation and end-to-end validation across all stories.
 
-- [ ] T057 Update `docs/architecture.md` to describe the new
+- [X] T057 Update `docs/architecture.md` to describe the new
       `ProbeLoadoutController`/`Service`/`Client`/`Mapper` layer and its
       pass-through relationship to `forge-service`'s `/api/v1/loadouts/*`
       (per `.cursor/rules/docs-maintenance.mdc`)
-- [ ] T058 [P] Update `docs/entities-enums.md` to note the new transient
+- [X] T058 [P] Update `docs/entities-enums.md` to note the new transient
       Loadout DTOs (still "no persisted entities") and the opaque
       status-string decoupling extended to Loadout/item/attempt statuses
       (research.md D3)
-- [ ] T059 [P] Update `docs/external-services.md` if the `forge-service`
+- [X] T059 [P] Update `docs/external-services.md` if the `forge-service`
       dependency description needs the new endpoints listed
-- [ ] T060 Run the full `quickstart.md` walkthrough (steps 1–8) against a
+- [X] T060 Run the full `quickstart.md` walkthrough (steps 1–8) against a
       locally running `forge-service` and confirm every step's expected
       response
-- [ ] T061 Run `./gradlew test` and confirm all new and existing tests pass,
+- [X] T061 Run `./gradlew test` and confirm all new and existing tests pass,
       including the unchanged single-artifact tests (FR-019 regression
       check)
 
