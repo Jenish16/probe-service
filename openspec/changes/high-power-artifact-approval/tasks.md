@@ -63,5 +63,5 @@
 
 - [ ] 10.1 Refresh the Functional Code Context to reflect the implemented approval capability.
 - [ ] 10.2 Refresh the Technical Code Context / `docs/` set (Tasks 8.1–8.5) to reflect the as-implemented approval workflow.
-- [ ] 10.3 Open the `[SDD-IMPL][POC-HIGH-POWER-APPROVAL]` implementation PR(s) and record their URLs in `status.yaml`'s `pull_requests.implementation`.
+- [x] 10.3 Open the `[SDD-IMPL][POC-HIGH-POWER-APPROVAL]` implementation PR(s) and record their URLs in `status.yaml`'s `pull_requests.implementation`. PR: https://github.com/Jenish16/probe-service/pull/7
 - [ ] 10.4 Rerun completion validation (merge status, mandatory tasks, tests, integration validation, docs, both context refreshes) before setting `status: implemented`.
