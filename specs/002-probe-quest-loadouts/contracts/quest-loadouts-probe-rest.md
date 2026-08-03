@@ -16,7 +16,12 @@ verbatim to/from `forge-service`'s `/api/v1/loadouts/*` REST contract
 (`Jenish16/forge-service#4`,
 `specs/002-quest-loadout-fulfilment/contracts/quest-loadouts-rest.md`) or its
 `LoadoutService` gRPC equivalent. `probe-service` additionally performs only
-the structural pre-checks noted per-endpoint below (research.md D7).
+the structural pre-checks noted per-endpoint below (research.md D7, revised
+by Gate 2 IC-001). Over the gRPC transport, a `409 Conflict` corresponds to
+`forge-service` returning gRPC status `ALREADY_EXISTS` (research.md D11) —
+`GrpcLoadoutClient` maps this explicitly, since the existing
+`GrpcForgeJobClient` error-mapping switch has no such case (the
+single-artifact flow has no idempotency-conflict scenario).
 
 ## `POST /api/v1/probe-requests/loadouts/{rest,grpc}`
 
@@ -40,12 +45,13 @@ Create a loadout (User Story 1).
 }
 ```
 
-`items` MUST contain 2–10 entries (`@Size(min = 2, max = 10)`, FR-001) —
-`probe-service` rejects with `400 Bad Request` before calling `forge-service`
-if this structural bound is violated. Per-item business-rule validation
-(artifact-name/type/material/power-level, FR-002) is `forge-service`'s alone;
-`probe-service` forwards every item regardless of its own opinion on
-validity.
+`items` MUST be non-empty (`probe-service`'s only structural check on this
+list is `@NotNull @NotEmpty`). The 2–10 item-count bound (FR-001) and all
+per-item business-rule validation (artifact-name/type/material/power-level,
+FR-002) are `forge-service`'s alone — `probe-service` forwards every item as
+raw, unvalidated fields regardless of its own opinion on validity (research.md
+D7, revised by Gate 2 IC-001), so that `forge-service`'s per-item rejection
+reporting is reachable for every request.
 
 **Response — `201 Created`** (new loadout) or `200 OK` (identical
 `requestReference` resubmission, FR-008) — `ProbeLoadoutResponse`
@@ -92,9 +98,10 @@ pre-check:
 
 | Condition | Status | Source |
 |---|---|---|
-| `items` outside 2–10 entries, or any required field blank/missing | `400 Bad Request` | `probe-service` (Bean Validation, fails before calling `forge-service`) |
+| `requestReference`/`loadoutName`/`requestedBy` blank, or `items` null/empty | `400 Bad Request` | `probe-service` (Bean Validation, fails before calling `forge-service`; mirrors `forge-service`'s own container-level checks exactly) |
+| `items` outside 2–10 entries | `400 Bad Request` | `forge-service` (forwarded, research.md D7 revised) |
 | Zero valid items after per-item validation | `400 Bad Request` | `forge-service` (forwarded) |
-| `requestReference` reused with different content | `409 Conflict` | `forge-service` (forwarded, FR-009) |
+| `requestReference` reused with different content | `409 Conflict` | `forge-service` (forwarded via REST `409`, or via gRPC `ALREADY_EXISTS` → `409`, research.md D11) |
 
 ## `GET /api/v1/probe-requests/loadouts/{loadoutId}/{rest,grpc}`
 

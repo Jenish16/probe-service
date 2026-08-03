@@ -8,6 +8,16 @@ into a public response, on every request. Nothing is stored between calls
 
 ## Public request DTOs (`dto/request`)
 
+**Revised by Gate 2 (IC-001)**: the item-level DTOs below use raw,
+unvalidated fields mirroring `forge-service`'s actual
+`LoadoutItemRequest`/`RetryLoadoutItemRequest` implementation exactly
+(research.md D7, revised) — no typed enums, no `@Min`/`@Max`/`@NotNull` on
+individual item fields, and no `@Size` bound on `items`. This is
+intentional: `forge-service` validates every item field itself and reports
+invalid ones as individual `rejectedItems` (FR-002/FR-003); if
+`probe-service` validated these fields too, an invalid value would reject
+the whole request at `probe-service` before `forge-service` ever saw it.
+
 ### `CreateProbeLoadoutRequest`
 
 | Field | Type | Validation | Notes |
@@ -15,32 +25,32 @@ into a public response, on every request. Nothing is stored between calls
 | `requestReference` | `String` | `@NotBlank` | Forwarded verbatim; idempotency is entirely `forge-service`'s responsibility (research.md D8). |
 | `loadoutName` | `String` | `@NotBlank` | |
 | `requestedBy` | `String` | `@NotBlank` | |
-| `items` | `List<ProbeLoadoutItemRequest>` | `@NotNull @Size(min = 2, max = 10) @Valid` | Structural pre-check only (research.md D7); `forge-service` re-validates and is authoritative. |
+| `items` | `List<ProbeLoadoutItemRequest>` | `@NotNull @NotEmpty @Valid` | No `@Size` bound (research.md D7 revised) — the 2–10 item-count check (FR-001) is `forge-service`'s alone, matching its own `CreateLoadoutRequest` Bean Validation footprint exactly. |
 
 ### `ProbeLoadoutItemRequest`
 
 | Field | Type | Validation | Notes |
 |---|---|---|---|
-| `artifactName` | `String` | `@NotBlank` | |
-| `artifactType` | `ArtifactType` | `@NotNull` | Reuses the existing `domain.ArtifactType` enum. |
-| `material` | `ForgeMaterial` | `@NotNull` | Reuses the existing `domain.ForgeMaterial` enum. |
-| `powerLevel` | `int` | `@Min(1) @Max(10)` | Matches the existing single-artifact bound. |
+| `artifactName` | `String` | none | Raw, unvalidated (research.md D7 revised) — matches `forge-service`'s `LoadoutItemRequest.artifactName`. |
+| `artifactType` | `String` | none | Raw `String`, not the `domain.ArtifactType` enum — an invalid value must reach `forge-service` to be reported as a rejected item, not fail deserialization at `probe-service`. |
+| `material` | `String` | none | Raw `String`, not the `domain.ForgeMaterial` enum — same reasoning. |
+| `powerLevel` | `int` | none | No `@Min`/`@Max` — an out-of-range value must reach `forge-service` to be reported as a rejected item. |
 
 ### `RetryProbeLoadoutRequest`
 
 | Field | Type | Validation | Notes |
 |---|---|---|---|
-| `items` | `List<RetryProbeLoadoutItemRequest>` | `@NotNull @Valid` | Forwarded verbatim; `forge-service` enforces "every currently-eligible item MUST be included" (canonical clarification #4). |
+| `items` | `List<RetryProbeLoadoutItemRequest>` | `@Valid` | Forwarded verbatim; `forge-service` enforces "every currently-eligible item MUST be included" (canonical clarification #4). A `null` `items` list is forwarded as-is — `forge-service`'s own compact constructor defaults it to an empty list. |
 
 ### `RetryProbeLoadoutItemRequest`
 
 | Field | Type | Validation | Notes |
 |---|---|---|---|
-| `loadoutItemId` | `String` | `@NotBlank` | |
+| `loadoutItemId` | `String` | `@NotBlank` | Matches `forge-service`'s `RetryLoadoutItemRequest.loadoutItemId`. |
 | `artifactName` | `String` (nullable) | none | Optional — omit to keep the item's prior value (mirrors `forge-service`'s contract). |
-| `artifactType` | `ArtifactType` (nullable) | none | Optional. |
-| `material` | `ForgeMaterial` (nullable) | none | Optional. |
-| `powerLevel` | `Integer` (nullable) | none | Optional. |
+| `artifactType` | `String` (nullable) | none | Raw `String`, optional — same IC-001 reasoning as create; an invalid correction value must reach `forge-service`'s own error handling, not fail at `probe-service`. |
+| `material` | `String` (nullable) | none | Raw `String`, optional. |
+| `powerLevel` | `Integer` (nullable) | none | Optional, unconstrained. |
 
 ## Public response DTOs (`dto/response`)
 
@@ -128,7 +138,7 @@ cached, stored, or reconciled across requests.
 
 | Rule | Requirement | Enforced by |
 |---|---|---|
-| 2–10 items structurally present | FR-001 | `probe-service` (`@Size`, fail-fast, research.md D7) — `forge-service` re-checks authoritatively |
-| Per-item artifact-name/type/material/power-level business rules | FR-002 | `forge-service` only (research.md D7) |
+| 2–10 items count bound | FR-001 | `forge-service` only (research.md D7, revised by IC-001) — `probe-service` has no `@Size` bound and forwards any non-empty `items` list |
+| Per-item artifact-name/type/material/power-level business rules | FR-002 | `forge-service` only (research.md D7, revised by IC-001) |
 | `requestReference` idempotency | FR-008/FR-009 | `forge-service` only (research.md D8) |
 | Retry request must include every currently-eligible item | Canonical clarification #4 | `forge-service` only — `probe-service` forwards the request body unmodified |
