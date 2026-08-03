@@ -1,0 +1,12 @@
+schema_version: 2
+initiative_id: "POC-QUEST-LOADOUTS"
+status: functional-approved
+updated_at: "2026-08-03T17:06:00+05:30"
+pull_requests:
+  technical_spec: []
+  implementation: []
+related_repositories:
+  - "Jenish16/forge-service"
+parallel_discovery: not-run
+implementation_conflict: not-run
+counterpart_specs: []
