@@ -77,46 +77,97 @@ The response provides:
 | `FAILED` | No accepted item completed successfully |
 | `CANCELLED` | All outstanding item work was cancelled |
 
+Status precedence: `READY` applies if every accepted item had already
+succeeded (whether or not the loadout was subsequently cancelled).
+`PARTIALLY_READY` applies if at least one accepted item succeeded and others
+failed or were cancelled. `CANCELLED` applies only when cancellation
+occurred and no accepted item had succeeded. `FAILED` applies when
+processing finished without cancellation and no accepted item succeeded.
+
+## Clarifications
+
+### Session 2026-08-03
+
+1. An identical request has the same `loadoutName`, `requestedBy`, and
+   complete ordered item list with all item fields equal.
+2. The 2–10 item limit applies to the total submitted items, before
+   per-item validation.
+3. The create response always reports `ACCEPTED`. Later retrieval reports
+   subsequent progress.
+4. A retry applies to every currently `FAILED` item; selecting a subset is
+   unsupported.
+5. Cancelled items are terminal and can never be retried.
+6. Retrying when no items are `FAILED` is a safe no-op.
+7. Repeating the same retry while its successor attempt exists does not
+   create another attempt.
+8. Cancelling when no outstanding work exists is a safe no-op.
+9. After cancellation: `READY` applies if every accepted item had already
+   succeeded; `PARTIALLY_READY` applies if at least one accepted item
+   succeeded and others failed or were cancelled; `CANCELLED` applies when
+   cancellation occurred and no accepted item had succeeded; `FAILED`
+   applies when processing finished without cancellation and no accepted
+   item succeeded.
+10. Completed and failed item results remain visible after cancellation.
+
+Service ownership, orchestration ownership, APIs, storage, and technical
+implementation remain unresolved and are Technical Spec concerns.
+
 ## Functional requirements
 
 ### Creation and validation
 
-1. A loadout shall contain between 2 and 10 items.
+1. A loadout shall contain between 2 and 10 items; this count is checked
+   against the total number of items submitted, before per-item validation
+   runs.
 2. Every item shall follow the existing artifact-name, type, material, and
    power-level rules.
 3. Invalid items shall be reported individually.
 4. Valid items shall continue even when another item is invalid.
 5. At least one valid item is required to create a loadout.
-6. Repeating the same `requestReference` with the same request shall return the
-   existing loadout.
-7. Reusing a `requestReference` with different content shall be rejected.
+6. Repeating the same `requestReference` with the same request shall return
+   the existing loadout. A request is the same when its `loadoutName`,
+   `requestedBy`, and complete ordered item list (all item fields equal) are
+   unchanged.
+7. Reusing a `requestReference` with different content — a different
+   `loadoutName`, `requestedBy`, item order, or any differing item field —
+   shall be rejected.
 8. Item ordering shall match the original request.
+9. The creation response's loadout status shall always be `ACCEPTED`, even
+   if item processing has already started; later progress is only visible
+   through subsequent retrieval.
 
 ### Tracking
 
-9. Each accepted item shall have a stable `loadoutItemId`.
-10. The requester shall see the current status of every item.
-11. The requester shall not need to know internal service-specific identifiers
+10. Each accepted item shall have a stable `loadoutItemId`.
+11. The requester shall see the current status of every item.
+12. The requester shall not need to know internal service-specific identifiers
     to manage the loadout.
-12. Loadout status shall reflect the latest visible item states.
-13. A support operator shall be able to view the attempt history and latest
+13. Loadout status shall reflect the latest visible item states, applying the
+    precedence defined under Loadout lifecycle.
+14. A support operator shall be able to view the attempt history and latest
     failure reason for each item.
 
 ### Cancellation
 
-14. A requester may cancel all items that have not reached a terminal state.
-15. Completed and failed items shall retain their results.
-16. Repeated cancellation shall be safe and shall not create additional work.
-17. A cancelled item shall not restart unless the requester explicitly retries
-    it where retry is permitted.
+15. A requester may cancel all items that have not reached a terminal state.
+16. Completed and failed items shall retain their results and remain visible
+    after cancellation.
+17. Repeated cancellation shall be safe and shall not create additional work.
+    Cancelling a loadout with no outstanding work is a safe no-op.
+18. A cancelled item shall not restart on its own. Cancellation is terminal
+    for that item: a cancelled item shall never be retry-eligible.
 
 ### Retry
 
-18. A requester may retry failed items after correcting any invalid input.
-19. Successful items shall not be repeated.
-20. Each retry shall create a new attempt under the same `loadoutItemId`.
-21. Attempt history shall retain previous outcomes.
-22. Repeated retry requests shall not create duplicate attempts.
+19. A requester may retry a loadout after correcting any invalid input; a
+    retry applies to every currently `FAILED` item in the loadout — a
+    requester cannot select a subset of failed items to retry.
+20. Successful items shall not be repeated.
+21. Each retry shall create a new attempt under the same `loadoutItemId`.
+22. Attempt history shall retain previous outcomes.
+23. Repeated retry requests shall not create duplicate attempts. Retrying an
+    item that already has a successor attempt (already retried) has no
+    effect. Retrying a loadout with no `FAILED` items is a safe no-op.
 
 ## Acceptance scenarios
 
