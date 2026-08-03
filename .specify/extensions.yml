@@ -1,0 +1,50 @@
+installed:
+- parallel-sdd
+settings:
+  auto_execute_hooks: true
+hooks:
+  after_specify:
+  - extension: parallel-sdd
+    command: speckit.parallel-sdd.initialize
+    enabled: true
+    optional: false
+    priority: 10
+    prompt: Execute speckit.parallel-sdd.initialize?
+    description: Initialize Parallel SDD lifecycle metadata
+    condition: null
+  before_plan:
+  - extension: parallel-sdd
+    command: speckit.parallel-sdd.design-check
+    enabled: true
+    optional: false
+    priority: 10
+    prompt: Execute speckit.parallel-sdd.design-check?
+    description: Discover parallel design work before planning
+    condition: null
+  after_plan:
+  - extension: parallel-sdd
+    command: speckit.parallel-sdd.validate-plan
+    enabled: true
+    optional: false
+    priority: 10
+    prompt: Execute speckit.parallel-sdd.validate-plan?
+    description: Record the draft Technical Spec PR and validate decisions
+    condition: null
+  before_implement:
+  - extension: parallel-sdd
+    command: speckit.parallel-sdd.implementation-check
+    enabled: true
+    optional: false
+    priority: 10
+    prompt: Execute speckit.parallel-sdd.implementation-check?
+    description: Check exact implementation conflicts before coding
+    condition: null
+  after_implement:
+  - extension: parallel-sdd
+    command: speckit.parallel-sdd.validate-completion
+    enabled: true
+    optional: false
+    priority: 10
+    prompt: Execute speckit.parallel-sdd.validate-completion?
+    description: Record implementation evidence without inferring merge completion
+    condition: null

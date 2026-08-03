@@ -1,0 +1,1 @@
+../../../.specify/extensions/parallel-sdd/.specify-dev/agent-commands/cursor-agent/speckit-parallel-sdd-initialize/SKILL.md

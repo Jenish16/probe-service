@@ -23,9 +23,12 @@ Read these files before making changes:
 
 ## Parallel SDD
 
-- This repo has both a Spec Kit adapter (`.sdd-parallel/adapters/spec-kit/`) and an OpenSpec schema (`openspec/schemas/myntra-sdd/`) installed. Both are currently **activation pending** — neither Spec Kit nor OpenSpec is initialized in this repo yet.
-- When a feature is driven through Spec Kit or OpenSpec, read its `status.yaml` and any `parallel-design-review.md` / `implementation-conflict-review.md` before planning or implementing; follow the gates in `.sdd-parallel/WORKFLOW.md`.
-- Technical Spec PRs use `[SDD-TECH][<initiative-id>] <title>`; implementation PRs use `[SDD-IMPL][<initiative-id>] <title>`.
+- This repo has both a Spec Kit adapter (`.sdd-parallel/adapters/spec-kit/`, natively registered as the `parallel-sdd` extension under `.specify/extensions/parallel-sdd/`) and an OpenSpec schema (`openspec/schemas/myntra-sdd/`) installed. Both frameworks are initialized and **ready** in this repo — Spec Kit's `after_specify`/`before_plan`/`after_plan`/`before_implement`/`after_implement` hooks and OpenSpec's `continue` workflow are active.
+- Before technical planning: read the feature/change `status.yaml` and both review reports; run Gate 1 (`.sdd-parallel/WORKFLOW.md`) before/during technical planning.
+- Confirm bounded `related_repositories` proposed from the Functional Spec and service dependency context before relying on cross-repo discovery.
+- Open a Technical Spec PR titled `[SDD-TECH][<initiative-id>] <title>` and store its URL in `pull_requests.technical_spec`; run Gate 2 before implementation.
+- Store implementation PRs in `pull_requests.implementation` and rerun completion validation after merge/context refresh — never infer `implemented` from similar code.
+- Stop on `blocked`, `stale`, or `scan-unavailable`; store clarifications/decisions as stable `PD-*`/`IC-*` records and synchronize them through explicit counterpart URLs. Update `updated_at` whenever status, checks, links, or counterparts change.
 - AI-fication itself created no `status.yaml` for the existing `specs/001-artifact-forging-rest-grpc` folder — it predates Parallel SDD and is treated as legacy-completed, not retrofitted.
 
 ## Package structure

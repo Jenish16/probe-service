@@ -5,7 +5,7 @@ alwaysApply: true
 
 # probe-service
 
-This is a lightweight POC AI-fication repo. Read [AGENTS.md](../AGENTS.md) before making changes.
+This is a lightweight POC AI-fication repo. Read [AGENTS.md](../../AGENTS.md) before making changes.
 
 ## Structure
 
@@ -27,3 +27,7 @@ This is a lightweight POC AI-fication repo. Read [AGENTS.md](../AGENTS.md) befor
 ## AI-fication baseline
 
 Full AI-fication baseline is installed (`docs/architecture.md`, `docs/entities-enums.md`, `docs/external-services.md`, `docs/flows/`, Parallel SDD adapters). Keep them accurate but proportionally small — see "Parallel SDD" in `AGENTS.md`.
+
+## Parallel SDD
+
+Spec Kit (`.sdd-parallel/adapters/spec-kit/`, natively registered under `.specify/extensions/parallel-sdd/`) and OpenSpec (`openspec/schemas/myntra-sdd/`) are both initialized and ready. Read the feature `status.yaml` and review reports, run Gate 1/Gate 2 from `.sdd-parallel/WORKFLOW.md`, and never infer `implemented` without merged-PR/test/doc evidence — see the "Parallel SDD" section in `AGENTS.md` for the full rules.
