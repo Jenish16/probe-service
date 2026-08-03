@@ -23,12 +23,12 @@ Read these files before making changes:
 
 ## Parallel SDD
 
-- This repo has both a Spec Kit adapter (`.sdd-parallel/adapters/spec-kit/`, registered natively under `.specify/extensions/parallel-sdd/`) and an OpenSpec schema (`openspec/schemas/myntra-sdd/`) installed. Both frameworks are now **ready**: the Spec Kit `parallel-sdd` extension is registered in `.specify/extensions.yml` with all five hooks, and OpenSpec's `continue` workflow is enabled (delivery `both`), so `openspec update` has generated `.cursor/commands/opsx-continue.md` and `.cursor/skills/openspec-continue-change/`.
+- This repo has both a Spec Kit adapter (`.sdd-parallel/adapters/spec-kit/`, natively registered as the `parallel-sdd` extension under `.specify/extensions/parallel-sdd/`) and an OpenSpec schema (`openspec/schemas/myntra-sdd/`) installed. Both frameworks are now **ready**: the Spec Kit `parallel-sdd` extension is registered in `.specify/extensions.yml` with all five hooks, and OpenSpec's `continue` workflow is enabled (delivery `both`), so `openspec update` has generated `.cursor/commands/opsx-continue.md` and `.cursor/skills/openspec-continue-change/`.
 - When a feature is driven through Spec Kit or OpenSpec, read its `status.yaml` and any `parallel-design-review.md` / `implementation-conflict-review.md` before planning or implementing; follow the gates in `.sdd-parallel/WORKFLOW.md`.
 - Run Gate 1 (Parallel Design Discovery) before/during technical planning, and Gate 2 (Implementation Conflict Check) before implementation. Confirm bounded `related_repositories` proposed from the Functional Spec and service dependency context — never search the whole organization.
 - Open a Technical Spec PR titled `[SDD-TECH][<initiative-id>] <title>` and store its URL in `pull_requests.technical_spec`; open implementation PRs titled `[SDD-IMPL][<initiative-id>] <title>` and store their URLs in `pull_requests.implementation`, rerunning completion validation after merge/context refresh.
 - Stop on `blocked`, `stale`, or `scan-unavailable`. Record clarifications and decisions as stable `PD-*` (design) or `IC-*` (implementation-conflict) entries, and sync the same decision through any explicit `counterpart_specs` URLs.
-- Never infer `implemented` status from similar code; update `updated_at` whenever status, check results, links, or counterparts change.
+- Never infer `implemented` status from similar code or without merged-PR/test/doc evidence; update `updated_at` whenever status, check results, links, or counterparts change.
 - AI-fication itself created no `status.yaml` for the existing `specs/001-artifact-forging-rest-grpc` folder — it predates Parallel SDD and is treated as legacy-completed, not retrofitted.
 
 ## Package structure

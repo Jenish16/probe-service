@@ -5,7 +5,7 @@ alwaysApply: true
 
 # probe-service
 
-This is a lightweight POC AI-fication repo. Read [AGENTS.md](../AGENTS.md) before making changes.
+This is a lightweight POC AI-fication repo. Read [AGENTS.md](../../AGENTS.md) before making changes.
 
 ## Structure
 
@@ -30,4 +30,4 @@ Full AI-fication baseline is installed (`docs/architecture.md`, `docs/entities-e
 
 ## Parallel SDD
 
-Spec Kit (`.sdd-parallel/adapters/spec-kit/`) and OpenSpec (`openspec/schemas/myntra-sdd/`) are both installed and ready/activated. Before planning or implementing a feature driven through either framework: read its `status.yaml` and review reports, run Gate 1 (design-check) before planning and Gate 2 (implementation-check) before implementing per `.sdd-parallel/WORKFLOW.md`, and use `[SDD-TECH][<initiative-id>]` / `[SDD-IMPL][<initiative-id>]` PR title prefixes. Never infer `implemented` from similar code. See the full "Parallel SDD" section in `AGENTS.md`.
+Spec Kit (`.sdd-parallel/adapters/spec-kit/`, natively registered under `.specify/extensions/parallel-sdd/`) and OpenSpec (`openspec/schemas/myntra-sdd/`) are both installed and ready/activated. Before planning or implementing a feature driven through either framework: read its `status.yaml` and review reports, run Gate 1 (design-check) before planning and Gate 2 (implementation-check) before implementing per `.sdd-parallel/WORKFLOW.md`, and use `[SDD-TECH][<initiative-id>]` / `[SDD-IMPL][<initiative-id>]` PR title prefixes. Never infer `implemented` from similar code or without merged-PR/test/doc evidence. See the full "Parallel SDD" section in `AGENTS.md`.
