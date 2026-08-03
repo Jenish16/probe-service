@@ -142,7 +142,65 @@ def state_path_for(repo: Path) -> Path:
     return repo / ".sdd-parallel/.runtime/framework-state.json"
 
 
-def openspec_preflight(repo: Path, replace_existing: bool) -> dict[str, Any]:
+def openspec_agent_files(repo: Path) -> list[Path]:
+    patterns = (
+        ".cursor/commands/opsx-*.md",
+        ".cursor/skills/openspec-*/SKILL.md",
+        ".codex/skills/openspec-*/SKILL.md",
+        ".agents/skills/openspec-*/SKILL.md",
+        ".claude/commands/opsx/*.md",
+        ".claude/skills/openspec-*/SKILL.md",
+    )
+    return sorted(
+        {path for pattern in patterns for path in repo.glob(pattern) if path.is_file()}
+    )
+
+
+def openspec_continue_files(repo: Path) -> list[Path]:
+    return [
+        path
+        for path in openspec_agent_files(repo)
+        if path.name == "opsx-continue.md"
+        or "openspec-continue-change" in path.parts
+    ]
+
+
+def openspec_profile(openspec: str, repo: Path) -> dict[str, Any]:
+    result = run([openspec, "config", "list", "--json"], repo)
+    try:
+        profile = json.loads(result.stdout)
+    except json.JSONDecodeError:
+        fail(f"openspec config list returned invalid JSON: {result.stdout}")
+    if not isinstance(profile, dict):
+        fail("openspec config list did not return an object")
+    return profile
+
+
+def openspec_profile_fingerprint(
+    repo: Path,
+    version: str,
+    profile: dict[str, Any],
+    agent_files: list[Path],
+) -> str:
+    return hashlib.sha256(
+        json.dumps(
+            {
+                "version": version,
+                "profile": profile.get("profile"),
+                "delivery": profile.get("delivery", "both"),
+                "workflows": profile.get("workflows", []),
+                "agent_files": [
+                    path.relative_to(repo).as_posix() for path in agent_files
+                ],
+            },
+            sort_keys=True,
+        ).encode()
+    ).hexdigest()
+
+
+def openspec_preflight(
+    repo: Path, replace_existing: bool, previous: dict[str, Any]
+) -> dict[str, Any]:
     openspec = command_path("OPENSPEC_BIN", "openspec")
     if not openspec:
         return {"status": "activation-pending", "reason": "openspec-not-installed"}
@@ -152,6 +210,45 @@ def openspec_preflight(repo: Path, replace_existing: bool) -> dict[str, Any]:
     generator = repo / ".sdd-parallel/bin/generate_openspec_overlay.mjs"
     if not generator.is_file():
         fail(f"OpenSpec overlay generator is missing: {generator}")
+    version = run([openspec, "--version"], repo).stdout.strip()
+    agent_files = openspec_agent_files(repo)
+    lifecycle_refreshed = False
+    profile_fingerprint = ""
+    if agent_files:
+        profile = openspec_profile(openspec, repo)
+        workflows = profile.get("workflows", [])
+        delivery = profile.get("delivery", "both")
+        if profile.get("profile", "core") != "custom" or "continue" not in workflows:
+            fail(
+                "OpenSpec agent integration is initialized but the official "
+                "continue workflow is not enabled. Run repo AI-fication, approve "
+                "adding continue to the developer-global OpenSpec profile, and "
+                "then run openspec update."
+            )
+        if delivery not in ("commands", "both"):
+            fail(
+                "OpenSpec continue is enabled but command delivery is disabled. "
+                "Run repo AI-fication and approve changing OpenSpec delivery to "
+                "both, then run openspec update."
+            )
+        profile_fingerprint = openspec_profile_fingerprint(
+            repo, version, profile, agent_files
+        )
+        if (
+            previous.get("profile_fingerprint") != profile_fingerprint
+            or not openspec_continue_files(repo)
+        ):
+            run([openspec, "update"], repo)
+            lifecycle_refreshed = True
+            agent_files = openspec_agent_files(repo)
+            profile_fingerprint = openspec_profile_fingerprint(
+                repo, version, profile, agent_files
+            )
+        if not openspec_continue_files(repo):
+            fail(
+                "openspec update completed without installing an official "
+                "continue command/skill for the initialized agent integration"
+            )
     command = [node, str(generator), "--repo", str(repo)]
     if replace_existing:
         command.append("--replace-existing")
@@ -161,11 +258,17 @@ def openspec_preflight(repo: Path, replace_existing: bool) -> dict[str, Any]:
     except json.JSONDecodeError:
         fail(f"overlay generator returned invalid JSON: {result.stdout}")
     state = {
-        "status": "ready",
-        "version": run([openspec, "--version"], repo).stdout.strip(),
+        "status": "ready" if agent_files else "activation-pending",
+        "version": version,
         "schema": payload.get("schema"),
         "regenerated": bool(payload.get("changed")),
+        "agent_integration": "ready" if agent_files else "not-initialized",
+        "lifecycle_refreshed": lifecycle_refreshed,
     }
+    if profile_fingerprint:
+        state["profile_fingerprint"] = profile_fingerprint
+    else:
+        state["reason"] = "openspec-agent-integration-not-installed"
     print(
         "OpenSpec Parallel SDD schema regenerated."
         if state["regenerated"]
@@ -293,7 +396,9 @@ def main() -> None:
 
     if args.framework in ("all", "openspec"):
         state["openspec"] = openspec_preflight(
-            repo, args.replace_existing_openspec
+            repo,
+            args.replace_existing_openspec,
+            state.get("openspec", {}),
         )
     if args.framework in ("all", "speckit"):
         state["speckit"] = speckit_preflight(repo, state.get("speckit", {}))

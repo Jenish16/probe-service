@@ -30,5 +30,5 @@ These are libraries embedded in the same process, not external service dependenc
 ## AI guidance
 
 - `forge-service` is the sole downstream dependency; both REST and gRPC paths are actively exercised. Do not change `dto/client/forge/*` or the gRPC client without confirming forge-service's actual contract (`forge-service/proto/artifact_forge_service.proto`, `forge-service/specs/001-artifact-forging-rest-grpc/spec.md`).
-- Do not remove or loosen the Resilience4j timeouts/retry predicates in `ResilienceConfig` without updating `docs/tech-stack.md` and the relevant spec — the retry-on-5xx/network-only, fail-fast-on-4xx design is deliberate.
+- Do not remove or loosen the Resilience4j timeouts/retry predicates in `ResilienceConfig` without updating `docs/TECH_STACK.md` and the relevant spec — the retry-on-5xx/network-only, fail-fast-on-4xx design is deliberate.
 - Because there is no confirmed upstream caller, changing probe-service's public REST contract (`dto/request`, `dto/response`) is lower-risk than changing the forge-service-facing contract, but should still go through `specs/001-artifact-forging-rest-grpc/spec.md`.

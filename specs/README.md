@@ -21,4 +21,4 @@ Each experiment or feature should have its own folder with:
 
 ## Parallel SDD (Spec Kit / OpenSpec)
 
-This repository also has a Parallel SDD baseline installed for both Spec Kit (`.sdd-parallel/adapters/spec-kit/`) and OpenSpec (`openspec/schemas/myntra-sdd/`), currently activation-pending. Any feature created through those frameworks (rather than as a manual experiment folder above) gets a `status.yaml` and follows the gates in `.sdd-parallel/WORKFLOW.md` — see the "Parallel SDD" section of `AGENTS.md`. Existing experiment folders above predate this baseline and are not retrofitted with lifecycle metadata.
+This repository also has a Parallel SDD baseline installed for both Spec Kit (`.sdd-parallel/adapters/spec-kit/`, natively registered) and OpenSpec (`openspec/schemas/myntra-sdd/`); both frameworks are initialized and ready. Any feature created through those frameworks (rather than as a manual experiment folder above) gets a `status.yaml` and follows the gates in `.sdd-parallel/WORKFLOW.md` — see the "Parallel SDD" section of `AGENTS.md`. Existing experiment folders above predate this baseline and are not retrofitted with lifecycle metadata.

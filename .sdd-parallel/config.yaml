@@ -1,4 +1,4 @@
-setup_version: 5
+setup_version: 6
 minimum_versions:
   speckit: "0.8.6"
   openspec: "1.6.0"
@@ -12,6 +12,9 @@ framework_refresh:
     base_schema: spec-driven
     overlay: .sdd-parallel/openspec-overlay.yaml
     generated_schema: myntra-sdd
+    required_workflows:
+      - continue
+    required_delivery: commands-or-both
   speckit:
     extension_source: .sdd-parallel/adapters/spec-kit
   compatible_upgrade_behavior: regenerate-refresh-and-validate

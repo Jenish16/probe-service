@@ -48,6 +48,10 @@ These boundaries are intentional; contracts may diverge over time.
 External caller → probe-service REST API → forge-service (REST or gRPC)
 ```
 
+## Architecture summary
+
+Layering: `ProbeRequestController` → `ProbeRequestService` → `ProbeRequestMapper` + (`RestForgeJobClient` or `GrpcForgeJobClient`) → `forge-service`. There is no repository/data layer — probe-service is stateless. See `docs/architecture.md` for the full component diagram and request lifecycle, and the "Known anti-patterns / deviations" below for where this layering is not followed strictly (`ForgeJobClient` interface unused for dispatch).
+
 ## forge-service endpoints
 
 | Transport | Target |
@@ -67,7 +71,7 @@ External caller → probe-service REST API → forge-service (REST or gRPC)
 - Keep it lightweight: no frameworks/infrastructure without a clear reason (see `AGENTS.md`).
 - Do not structure the codebase around `forge-service` — it is a downstream dependency, not the root module.
 - Keep public DTOs (`dto/request`, `dto/response`) separate from downstream forge DTOs (`dto/client/forge/`); never reuse one as the other.
-- Do not remove the Resilience4j timeouts/circuit-breaker/retry config without updating `docs/tech-stack.md` and the relevant spec.
+- Do not remove the Resilience4j timeouts/circuit-breaker/retry config without updating `docs/TECH_STACK.md` and the relevant spec.
 
 ## Known anti-patterns / deviations
 

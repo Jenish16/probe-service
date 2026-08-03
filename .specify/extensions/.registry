@@ -1,0 +1,44 @@
+{
+  "schema_version": "1.0",
+  "extensions": {
+    "parallel-sdd": {
+      "version": "1.2.0",
+      "source": "local",
+      "manifest_hash": "sha256:eefa9203dbb4fac7e52ce11eb8ea7a0d579861d37051c912e75f52a29534c65f",
+      "enabled": true,
+      "priority": 10,
+      "registered_commands": {
+        "agy": [
+          "speckit.parallel-sdd.initialize",
+          "speckit.parallel-sdd.design-check",
+          "speckit.parallel-sdd.validate-plan",
+          "speckit.parallel-sdd.implementation-check",
+          "speckit.parallel-sdd.validate-completion"
+        ],
+        "codex": [
+          "speckit.parallel-sdd.initialize",
+          "speckit.parallel-sdd.design-check",
+          "speckit.parallel-sdd.validate-plan",
+          "speckit.parallel-sdd.implementation-check",
+          "speckit.parallel-sdd.validate-completion"
+        ],
+        "cursor-agent": [
+          "speckit.parallel-sdd.initialize",
+          "speckit.parallel-sdd.design-check",
+          "speckit.parallel-sdd.validate-plan",
+          "speckit.parallel-sdd.implementation-check",
+          "speckit.parallel-sdd.validate-completion"
+        ],
+        "zed": [
+          "speckit.parallel-sdd.initialize",
+          "speckit.parallel-sdd.design-check",
+          "speckit.parallel-sdd.validate-plan",
+          "speckit.parallel-sdd.implementation-check",
+          "speckit.parallel-sdd.validate-completion"
+        ]
+      },
+      "registered_skills": [],
+      "installed_at": "2026-08-03T10:31:08.396426+00:00"
+    }
+  }
+}

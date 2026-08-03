@@ -1,0 +1,65 @@
+schema_version: "1.0"
+
+extension:
+  id: parallel-sdd
+  name: "Parallel SDD Conflict Management"
+  version: "1.2.0"
+  description: "Discovers parallel specs and PRs, records decisions, and blocks unresolved implementation conflicts"
+  category: "process"
+  effect: "read-write"
+  author: "Myntra"
+  repository: "https://github.com/myntra/myntra-ai-native"
+  license: "Proprietary"
+
+requires:
+  speckit_version: ">=0.8.6"
+  tools:
+    - name: git
+      required: true
+    - name: gh
+      required: false
+
+provides:
+  commands:
+    - name: speckit.parallel-sdd.initialize
+      file: commands/speckit.parallel-sdd.initialize.md
+      description: "Initialize or validate lifecycle metadata for the active feature"
+    - name: speckit.parallel-sdd.design-check
+      file: commands/speckit.parallel-sdd.design-check.md
+      description: "Run Parallel Design Discovery before technical planning"
+    - name: speckit.parallel-sdd.validate-plan
+      file: commands/speckit.parallel-sdd.validate-plan.md
+      description: "Record the Technical Spec PR and validate design decisions"
+    - name: speckit.parallel-sdd.implementation-check
+      file: commands/speckit.parallel-sdd.implementation-check.md
+      description: "Run the exact conflict and reuse check before implementation"
+    - name: speckit.parallel-sdd.validate-completion
+      file: commands/speckit.parallel-sdd.validate-completion.md
+      description: "Record implementation PRs and validate evidence before implemented"
+
+hooks:
+  after_specify:
+    command: speckit.parallel-sdd.initialize
+    optional: false
+    description: "Initialize Parallel SDD lifecycle metadata"
+  before_plan:
+    command: speckit.parallel-sdd.design-check
+    optional: false
+    description: "Discover parallel design work before planning"
+  after_plan:
+    command: speckit.parallel-sdd.validate-plan
+    optional: false
+    description: "Record the draft Technical Spec PR and validate decisions"
+  before_implement:
+    command: speckit.parallel-sdd.implementation-check
+    optional: false
+    description: "Check exact implementation conflicts before coding"
+  after_implement:
+    command: speckit.parallel-sdd.validate-completion
+    optional: false
+    description: "Record implementation evidence without inferring merge completion"
+
+tags:
+  - "sdd"
+  - "conflict-detection"
+  - "process"
