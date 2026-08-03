@@ -4,22 +4,24 @@
 
 `probe-service` is the caller-side Spring Boot service in the Code Istari learning POC. It exposes its own public REST API and, on behalf of an external caller, delegates forge-job creation/retrieval to `forge-service` over either REST or gRPC — the caller picks the transport by hitting a different endpoint.
 
+Power level 8-10 submissions are gated behind an approval lifecycle (`PENDING_APPROVAL → APPROVED/REJECTED/EXPIRED/CANCELLED`), owned entirely by `forge-service` (probe-service holds no approval state of its own). probe-service additionally exposes operator/audit operations — list pending approvals, approve, reject, cancel, and decision history — each proxied to forge-service over both REST and gRPC, mirroring the existing dual-transport pattern.
+
 ## Module/package map
 
 | Package | Responsibility |
 |---|---|
 | `com.codeistari.probe` | Application bootstrap (`ProbeServiceApplication`) |
-| `com.codeistari.probe.controller` | Public REST entrypoint (`ProbeRequestController`) |
-| `com.codeistari.probe.service` | Orchestration (`ProbeRequestService`) |
-| `com.codeistari.probe.client` | `ForgeJobClient` interface; `BaseApiClient` shared REST-call helper |
-| `com.codeistari.probe.client.rest` | `RestForgeJobClient` + `RestForgeClientConfig` |
-| `com.codeistari.probe.client.grpc` | `GrpcForgeJobClient` + `GrpcForgeClientConfig` |
-| `com.codeistari.probe.mapper` | `ProbeRequestMapper` — public DTO ↔ downstream DTO/proto mapping |
+| `com.codeistari.probe.controller` | Public REST entrypoints (`ProbeRequestController` — create/get; `ProbeApprovalController` — list-pending/approve/reject/cancel/history) |
+| `com.codeistari.probe.service` | Orchestration (`ProbeRequestService` — create/get; `ProbeApprovalService` — the five approval/audit operations) |
+| `com.codeistari.probe.client` | `ForgeJobClient`, `ApprovalForgeClient` interfaces; `BaseApiClient` shared REST-call helper |
+| `com.codeistari.probe.client.rest` | `RestForgeJobClient`, `RestApprovalForgeClient` + `RestForgeClientConfig` |
+| `com.codeistari.probe.client.grpc` | `GrpcForgeJobClient`, `GrpcApprovalForgeClient` + `GrpcForgeClientConfig` |
+| `com.codeistari.probe.mapper` | `ProbeRequestMapper` — public DTO ↔ downstream DTO/proto mapping, including approval fields/DTOs |
 | `com.codeistari.probe.config` | `ForgeClientProperties` (`forge.*` config), `ResilienceConfig` (Resilience4j predicates), `RestClientFactory` |
-| `com.codeistari.probe.dto.request` / `.dto.response` | Public API DTOs (`CreateProbeForgeJobRequest`, `ProbeForgeJobResponse`) |
-| `com.codeistari.probe.dto.client.forge.request` / `.response` | Downstream forge-service REST DTOs (`ForgeCreateJobRestRequest`, `ForgeJobRestResponse`) — deliberately kept separate from the public DTOs |
+| `com.codeistari.probe.dto.request` / `.dto.response` | Public API DTOs (`CreateProbeForgeJobRequest`, `ProbeForgeJobResponse`, `ApprovalDecisionRequest`, `RejectDecisionRequest`, `CancelRequestRequest`, `ProbePendingApprovalSummary`, `DecisionHistoryResponse`) |
+| `com.codeistari.probe.dto.client.forge.request` / `.response` | Downstream forge-service REST DTOs (`ForgeCreateJobRestRequest`, `ForgeJobRestResponse`, `ForgeApproveJobRestRequest`, `ForgeRejectJobRestRequest`, `ForgeCancelJobRestRequest`, `ForgeDecisionHistoryRestResponse`) — deliberately kept separate from the public DTOs |
 | `com.codeistari.probe.exception` | `ForgeRemoteCallException`, `ErrorResponse`, `GlobalExceptionHandler` |
-| `com.codeistari.probe.domain` | `ArtifactType`, `ForgeMaterial` (mirrored from forge-service), `ForgeTransport` (`REST`/`GRPC`, probe-specific) |
+| `com.codeistari.probe.domain` | `ArtifactType`, `ForgeMaterial`, `ApprovalStatus`, `ApprovalDecisionType` (mirrored from forge-service), `ForgeTransport` (`REST`/`GRPC`, probe-specific) |
 
 ## Request lifecycle
 
@@ -29,6 +31,8 @@
 4. The downstream client call is wrapped in a Resilience4j `@CircuitBreaker` + `@Retry` pair (`FORGE_REST` or `FORGE_GRPC`), with a bounded timeout (REST: `forge.rest.timeout-ms`, default 2000ms) or deadline (gRPC: `forge.grpc.deadline-ms`, default 2000ms).
 5. On success, `ProbeRequestMapper` converts the forge-service response (`ForgeJobRestResponse` or gRPC `ForgeJobGrpcResponse`) into the public `ProbeForgeJobResponse`, tagging it with `transport: REST` or `GRPC`.
 6. On failure, `GlobalExceptionHandler` maps: `MethodArgumentNotValidException` → 400; `ForgeRemoteCallException` → its carried status (mapped from forge-service's REST/gRPC error, see below); `CallNotPermittedException` (circuit open) → 503.
+
+`ProbeApprovalController`'s five operations (list pending, approve, reject, cancel, decision history) follow the identical pattern through `ProbeApprovalService` and `RestApprovalForgeClient`/`GrpcApprovalForgeClient`, reusing the same `FORGE_REST`/`FORGE_GRPC` resilience pairs and error mapping. forge-service owns all approval state and decisions (lifecycle transitions, idempotency, expiry, decision history); probe-service only proxies these calls and translates DTO shapes.
 
 ## Data flow
 
@@ -54,21 +58,33 @@ flowchart TB
 
   subgraph Service["probe-service (single JVM)"]
     Api[ProbeRequestController]
+    ApprovalApi[ProbeApprovalController]
     Orchestrator[ProbeRequestService]
+    ApprovalOrchestrator[ProbeApprovalService]
     Mapper[ProbeRequestMapper]
     RestClient[RestForgeJobClient]
     GrpcClient[GrpcForgeJobClient]
+    RestApprovalClient[RestApprovalForgeClient]
+    GrpcApprovalClient[GrpcApprovalForgeClient]
     ErrHandler[GlobalExceptionHandler]
   end
 
   Forge[forge-service]
 
   Caller -- REST --> Api
+  Caller -- REST --> ApprovalApi
   Api --> Orchestrator
+  ApprovalApi --> ApprovalOrchestrator
   Orchestrator --> Mapper
+  ApprovalOrchestrator --> Mapper
   Orchestrator -- "/rest path" --> RestClient
   Orchestrator -- "/grpc path" --> GrpcClient
+  ApprovalOrchestrator -- "/rest path" --> RestApprovalClient
+  ApprovalOrchestrator -- "/grpc path" --> GrpcApprovalClient
   RestClient -- "HTTP :8081" --> Forge
   GrpcClient -- "gRPC :9091" --> Forge
+  RestApprovalClient -- "HTTP :8081" --> Forge
+  GrpcApprovalClient -- "gRPC :9091" --> Forge
   Api -.errors.-> ErrHandler
+  ApprovalApi -.errors.-> ErrHandler
 ```

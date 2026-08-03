@@ -54,7 +54,8 @@ class ProbeRequestControllerTest {
 										  "artifactType": "RING",
 										  "material": "MITHRIL",
 										  "requestedBy": "ranger",
-										  "powerLevel": 7
+										  "powerLevel": 7,
+										  "requesterReference": "req-ref-1"
 										}
 										"""))
 				.andExpect(status().isCreated())
@@ -79,7 +80,8 @@ class ProbeRequestControllerTest {
 										  "artifactType": "RING",
 										  "material": "MITHRIL",
 										  "requestedBy": "ranger",
-										  "powerLevel": 7
+										  "powerLevel": 7,
+										  "requesterReference": "req-ref-1"
 										}
 										"""))
 				.andExpect(status().isCreated())
@@ -101,7 +103,8 @@ class ProbeRequestControllerTest {
 										  "artifactType": "RING",
 										  "material": "MITHRIL",
 										  "requestedBy": "ranger",
-										  "powerLevel": 7
+										  "powerLevel": 7,
+										  "requesterReference": "req-ref-1"
 										}
 										"""))
 				.andExpect(status().isBadRequest())
@@ -120,7 +123,28 @@ class ProbeRequestControllerTest {
 										  "artifactType": "RING",
 										  "material": "MITHRIL",
 										  "requestedBy": "ranger",
-										  "powerLevel": 11
+										  "powerLevel": 11,
+										  "requesterReference": "req-ref-1"
+										}
+										"""))
+				.andExpect(status().isBadRequest())
+				.andExpect(jsonPath("$.message").exists());
+	}
+
+	@Test
+	void rejectsBlankRequesterReference() throws Exception {
+		mockMvc.perform(
+						post("/api/v1/probe-requests/forge-jobs/rest")
+								.contentType(MediaType.APPLICATION_JSON)
+								.content(
+										"""
+										{
+										  "artifactName": "ember-ring",
+										  "artifactType": "RING",
+										  "material": "MITHRIL",
+										  "requestedBy": "ranger",
+										  "powerLevel": 7,
+										  "requesterReference": "   "
 										}
 										"""))
 				.andExpect(status().isBadRequest())
@@ -137,6 +161,11 @@ class ProbeRequestControllerTest {
 				7,
 				"QUEUED",
 				Instant.parse("2026-05-27T10:00:00Z"),
-				transport);
+				transport,
+				"req-ref-1",
+				null,
+				null,
+				null,
+				null);
 	}
 }

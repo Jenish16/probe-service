@@ -10,4 +10,9 @@ public record ForgeJobRestResponse(
 		String requestedBy,
 		int powerLevel,
 		String status,
-		Instant createdAt) {}
+		Instant createdAt,
+		String requesterReference,
+		String originalRequestId,
+		String approvalStatus,
+		Instant approvalExpiresAt,
+		String rejectionReason) {}

@@ -70,7 +70,7 @@ class ProbeRequestServiceTest {
 
 	private CreateProbeForgeJobRequest sampleRequest() {
 		return new CreateProbeForgeJobRequest(
-				"ember-ring", ArtifactType.RING, ForgeMaterial.MITHRIL, "ranger", 7);
+				"ember-ring", ArtifactType.RING, ForgeMaterial.MITHRIL, "ranger", 7, "req-ref-1", null);
 	}
 
 	private ForgeJobRestResponse sampleRestResponse() {
@@ -82,7 +82,12 @@ class ProbeRequestServiceTest {
 				"ranger",
 				7,
 				"QUEUED",
-				Instant.parse("2026-05-27T10:00:00Z"));
+				Instant.parse("2026-05-27T10:00:00Z"),
+				"req-ref-1",
+				null,
+				"NOT_REQUIRED",
+				null,
+				null);
 	}
 
 	private ForgeJobGrpcResponse sampleGrpcResponse() {

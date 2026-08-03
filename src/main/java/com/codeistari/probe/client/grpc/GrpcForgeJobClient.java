@@ -68,15 +68,18 @@ public class GrpcForgeJobClient implements ForgeJobClient {
 
 	@Override
 	public ForgeJobRestResponse createForgeJob(ForgeCreateJobRestRequest request) {
-		CreateForgeJobGrpcRequest grpcRequest =
+		CreateForgeJobGrpcRequest.Builder builder =
 				CreateForgeJobGrpcRequest.newBuilder()
 						.setArtifactName(request.artifactName())
 						.setArtifactType(request.artifactType())
 						.setMaterial(request.material())
 						.setRequestedBy(request.requestedBy())
 						.setPowerLevel(request.powerLevel())
-						.build();
-		return toRestResponse(createForgeJob(grpcRequest));
+						.setRequesterReference(request.requesterReference());
+		if (request.originalRequestId() != null) {
+			builder.setOriginalRequestId(request.originalRequestId());
+		}
+		return toRestResponse(createForgeJob(builder.build()));
 	}
 
 	@Override
@@ -102,7 +105,12 @@ public class GrpcForgeJobClient implements ForgeJobClient {
 				response.getRequestedBy(),
 				response.getPowerLevel(),
 				response.getStatus(),
-				mapper.toInstant(response.getCreatedAt()));
+				mapper.toInstant(response.getCreatedAt()),
+				response.getRequesterReference(),
+				response.getOriginalRequestId().isEmpty() ? null : response.getOriginalRequestId(),
+				response.getApprovalStatus().isEmpty() ? null : response.getApprovalStatus(),
+				response.hasApprovalExpiresAt() ? mapper.toInstant(response.getApprovalExpiresAt()) : null,
+				response.getRejectionReason().isEmpty() ? null : response.getRejectionReason());
 	}
 
 	private ForgeJobGrpcResponse rethrowFallback(String operation, Throwable throwable) {

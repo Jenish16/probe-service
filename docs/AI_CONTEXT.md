@@ -10,7 +10,7 @@
 
 `probe-service` is a normal Spring Boot caller-side service. It exposes its own REST APIs and may call external/downstream services when required.
 
-Current experiment: **Artifact Forging** — probe-service accepts local forge-job requests and delegates creation/fetching to `forge-service` through REST or gRPC.
+Current experiment: **Artifact Forging** — probe-service accepts local forge-job requests and delegates creation/fetching to `forge-service` through REST or gRPC. Power level 8-10 submissions go through the **High-Power Artifact Approval** capability (`openspec/changes/high-power-artifact-approval/`) — forge-service gates them behind an operator approval decision; probe-service exposes list-pending/approve/reject/cancel/decision-history operations that proxy to forge-service, but owns no approval state itself.
 
 ## What is not in scope yet
 
@@ -83,6 +83,7 @@ Layering: `ProbeRequestController` → `ProbeRequestService` → `ProbeRequestMa
 
 - [Create forge job](flows/create-forge-job/README.md) — REST + gRPC create path, including resilience/error mapping
 - [Get forge job](flows/get-forge-job/README.md) — REST + gRPC retrieval path, including not-found and downstream-failure handling
+- [Approve/reject/cancel forge job](flows/approve-reject-forge-job/README.md) — the five High-Power Artifact Approval operator/audit operations (list pending, approve, reject, cancel, decision history)
 
 ## Commands
 

@@ -12,4 +12,6 @@ public record CreateProbeForgeJobRequest(
 		@NotNull ArtifactType artifactType,
 		@NotNull ForgeMaterial material,
 		@NotBlank String requestedBy,
-		@Min(1) @Max(10) int powerLevel) {}
+		@Min(1) @Max(10) int powerLevel,
+		@NotBlank String requesterReference,
+		String originalRequestReference) {}

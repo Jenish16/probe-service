@@ -1,5 +1,6 @@
 package com.codeistari.probe.dto.response;
 
+import com.codeistari.probe.domain.ApprovalStatus;
 import com.codeistari.probe.domain.ArtifactType;
 import com.codeistari.probe.domain.ForgeMaterial;
 import com.codeistari.probe.domain.ForgeTransport;
@@ -14,4 +15,9 @@ public record ProbeForgeJobResponse(
 		int powerLevel,
 		String status,
 		Instant createdAt,
-		ForgeTransport transport) {}
+		ForgeTransport transport,
+		String requesterReference,
+		String originalRequestReference,
+		ApprovalStatus approvalStatus,
+		String rejectionReason,
+		Instant approvalExpiresAt) {}
