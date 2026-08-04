@@ -14,13 +14,15 @@ source_snapshots:
     revision: 490335b185752d92d75e5797c3d7e40bcfee4df7
     content_sha256: ddb3188737b828e69b32bd76e6fbc932e8670c74f9d95b6977332c6bb2df6b97
 completion:
-  result: pending
-  checked_at: "2026-08-04T00:58:00+05:30"
-  merge_commits: []
+  result: passed
+  checked_at: "2026-08-04T05:45:27Z"
+  merge_commits:
+    - "ff51aae964aafbc49315a28ff44cfff5e6101048"
+    - "323ad2b5b325002fbdb6b7d929b7c1f18f5935ac"
   mandatory_tasks_complete: true
   tests_passed: true
   documentation_updated: true
-  contexts_refreshed: false
+  contexts_refreshed: true
   integration_validation: passed
 ---
 
@@ -169,9 +171,9 @@ Implementation may proceed.
 
 | Evidence | Result | Source |
 |---|---|---|
-| Implementation PRs merged | Pending — [probe-service#8](https://github.com/Jenish16/probe-service/pull/8) opened, not yet merged | `gh pr list` (2026-08-04) |
+| Implementation PRs merged | Pass | [forge-service#6](https://github.com/Jenish16/forge-service/pull/6) (`ff51aae`) and [probe-service#8](https://github.com/Jenish16/probe-service/pull/8) (`323ad2b`) |
 | Mandatory tasks complete | Pass — all 61 tasks in `tasks.md` marked `[X]` | `specs/002-probe-quest-loadouts/tasks.md` |
-| Required tests passed | Pass — `gradle test` BUILD SUCCESSFUL (all unit/controller/client/mapper tests green, including existing single-artifact regression) | Local run (2026-08-04) |
+| Required tests passed | Pass — 112 tests, 0 failures | `./gradlew clean test` (2026-08-04) |
 | Documentation updated | Pass — `docs/architecture.md`, `docs/entities-enums.md`, `docs/external-services.md` updated (T057–T059) | Working tree |
-| Functional and Technical Contexts refreshed | Not done — pending merge and context refresh | |
-| Required integration validation | Pass — `quickstart.md` steps 1–4, 7–8 exercised against locally running `forge-service` (8081) and `probe-service` (8082); create/idempotency/conflict/retrieve/cancel/attempt-history/single-artifact regression confirmed | Manual walkthrough (2026-08-04) |
+| Functional and Technical Contexts refreshed | Pass | Product Spec unchanged; `docs/AI_CONTEXT.md` and technical docs refreshed |
+| Required integration validation | Pass — live Probe → Forge REST and gRPC create/get/cancel/reject/retry/attempt-history paths | Manual validation (2026-08-04) |

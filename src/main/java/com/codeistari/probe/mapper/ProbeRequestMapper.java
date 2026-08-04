@@ -80,13 +80,13 @@ public class ProbeRequestMapper {
 				ForgeMaterial.valueOf(response.getMaterial()),
 				response.getRequestedBy(),
 				response.getPowerLevel(),
-				response.getStatus(),
+				blankToNull(response.getStatus()),
 				toInstant(response.getCreatedAt()),
 				transport,
 				response.getRequesterReference(),
-				response.getOriginalRequestId().isEmpty() ? null : response.getOriginalRequestId(),
-				toApprovalStatus(response.getApprovalStatus().isEmpty() ? null : response.getApprovalStatus()),
-				response.getRejectionReason().isEmpty() ? null : response.getRejectionReason(),
+				blankToNull(response.getOriginalRequestId()),
+				toApprovalStatus(response.getApprovalStatus()),
+				blankToNull(response.getRejectionReason()),
 				response.hasApprovalExpiresAt() ? toInstant(response.getApprovalExpiresAt()) : null);
 	}
 
@@ -133,6 +133,10 @@ public class ProbeRequestMapper {
 		}
 		ApprovalStatus status = ApprovalStatus.valueOf(rawApprovalStatus);
 		return status == ApprovalStatus.NOT_REQUIRED ? null : status;
+	}
+
+	private String blankToNull(String value) {
+		return value == null || value.isBlank() ? null : value;
 	}
 
 	public Instant toInstant(Timestamp timestamp) {

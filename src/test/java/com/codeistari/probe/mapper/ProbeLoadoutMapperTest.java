@@ -112,6 +112,28 @@ class ProbeLoadoutMapperTest {
 	}
 
 	@Test
+	void mapsGrpcPendingApprovalWithoutInventingAProcessingStatus() {
+		LoadoutGrpcResponse grpcResponse = LoadoutGrpcResponse.newBuilder()
+				.setLoadoutId("lo_pending")
+				.setLoadoutName("Approval Kit")
+				.setRequestedBy("questmaster")
+				.setStatus("ACCEPTED")
+				.addItems(LoadoutItemGrpcResponse.newBuilder()
+						.setLoadoutItemId("li_pending")
+						.setArtifactName("sun-blade")
+						.setArtifactType("BLADE")
+						.setMaterial("OBSIDIAN")
+						.setPowerLevel(8)
+						.setApprovalStatus("PENDING_APPROVAL"))
+				.build();
+
+		ProbeLoadoutResponse response = mapper.toProbeLoadoutResponse(grpcResponse, ForgeTransport.GRPC);
+
+		assertThat(response.items().get(0).status()).isNull();
+		assertThat(response.items().get(0).approvalStatus()).isEqualTo("PENDING_APPROVAL");
+	}
+
+	@Test
 	void mapsRetryRequestKeepingNullFieldsAsPriorValueOmissions() {
 		RetryProbeLoadoutRequest request =
 				new RetryProbeLoadoutRequest(List.of(new RetryProbeLoadoutItemRequest("li_1", null, "SHIELD", null, 9)));
@@ -164,6 +186,26 @@ class ProbeLoadoutMapperTest {
 		assertThat(response.attempts().get(0).failureReason()).isEqualTo("forge cracked");
 		assertThat(response.attempts().get(0).approvalStatus()).isNull();
 		assertThat(response.attempts().get(0).createdAt()).isEqualTo(createdAt);
+	}
+
+	@Test
+	void mapsPendingGrpcAttemptWithoutInventingAProcessingStatus() {
+		Instant createdAt = Instant.parse("2026-05-27T10:00:00Z");
+		Timestamp timestamp = Timestamp.newBuilder().setSeconds(createdAt.getEpochSecond()).build();
+		LoadoutItemAttemptsGrpcResponse grpcResponse = LoadoutItemAttemptsGrpcResponse.newBuilder()
+				.setLoadoutItemId("li_pending")
+				.addAttempts(LoadoutAttemptGrpcResponse.newBuilder()
+						.setAttemptNumber(1)
+						.setForgeJobId("fj_pending")
+						.setRequesterReference("li_pending")
+						.setApprovalStatus("PENDING_APPROVAL")
+						.setCreatedAt(timestamp))
+				.build();
+
+		ProbeLoadoutAttemptHistoryResponse response = mapper.toProbeLoadoutAttemptHistoryResponse(grpcResponse);
+
+		assertThat(response.attempts().get(0).status()).isNull();
+		assertThat(response.attempts().get(0).approvalStatus()).isEqualTo("PENDING_APPROVAL");
 	}
 
 	@Test

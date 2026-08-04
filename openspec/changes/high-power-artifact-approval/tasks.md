@@ -56,12 +56,12 @@
 - [x] 9.2 `IC-001` (mandatory joint rollout) and `IC-002` (mirror `originalRequestId` at the downstream DTO boundary) recorded and applied to `design.md`.
 - [x] 9.3 Implement Tasks 1–3's downstream DTOs (`ForgeCreateJobRestRequest`, `ForgeJobRestResponse`, gRPC equivalents) using forge-service's exact field name `originalRequestId`, translating to/from the public `originalRequestReference` field in `ProbeRequestMapper` (`IC-002`).
 - [x] 9.4 Implement `RestApprovalForgeClient.getDecisionHistory` calling `GET /api/v1/forge-jobs/history?requesterReference={ref}` as a query parameter, matching forge-service's confirmed REST contract.
-- [ ] 9.5 **Do not merge probe-service's implementation PR before, or independently of, `forge-service#5` (or its merged successor)** — this is a hard joint-rollout dependency (`IC-001`), because forge-service's `requesterReference` field becoming required is a breaking change that probe-service's idempotency/retry logic depends on being real (not a server-generated fallback).
+- [x] 9.5 **Do not merge probe-service's implementation PR before, or independently of, `forge-service#5` (or its merged successor)** — satisfied: forge-service#5 merged before probe-service#7 (`IC-001`).
 - [x] 9.6 Before opening probe-service's implementation PR, re-check `forge-service#5`'s state (merged, still open, or superseded) and re-run Gate 2 discovery if its contract has changed since this review. Re-checked at implementation time: `forge-service#5` is still `OPEN`, same commit (`f99f4b26`) reviewed at Gate 2 — no drift, no re-run needed.
 
 ## 10. Completion validation (`.sdd-parallel/WORKFLOW.md` § Implementation completion validation)
 
-- [ ] 10.1 Refresh the Functional Code Context to reflect the implemented approval capability.
-- [ ] 10.2 Refresh the Technical Code Context / `docs/` set (Tasks 8.1–8.5) to reflect the as-implemented approval workflow.
+- [x] 10.1 Refresh the Functional Code Context to reflect the implemented approval capability. For this standalone POC there is no common functional-context repository; the authoritative Product Spec remains in `product-specs/` and is unchanged.
+- [x] 10.2 Refresh the Technical Code Context / `docs/` set (Tasks 8.1–8.5) to reflect the as-implemented approval workflow.
 - [x] 10.3 Open the `[SDD-IMPL][POC-HIGH-POWER-APPROVAL]` implementation PR(s) and record their URLs in `status.yaml`'s `pull_requests.implementation`. PR: https://github.com/Jenish16/probe-service/pull/7
-- [ ] 10.4 Rerun completion validation (merge status, mandatory tasks, tests, integration validation, docs, both context refreshes) before setting `status: implemented`.
+- [x] 10.4 Rerun completion validation (merge status, mandatory tasks, tests, integration validation, docs, both context refreshes) before setting `status: implemented`. Completed 2026-08-04 after both implementation PRs merged and live REST/gRPC validation passed.

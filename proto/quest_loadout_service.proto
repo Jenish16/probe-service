@@ -65,7 +65,7 @@ message LoadoutItemGrpcResponse {
   string failure_reason = 7;   // present only when status == FAILED
 
   // Pass-through only; owned entirely by High-Power Approval (design.md D1).
-  // Unset on every response until that initiative's implementation lands
+  // Pass-through from the High-Power Approval-owned ForgeJob lifecycle
   // (research.md D15). Never derived or written by this plan.
   string approval_status = 8;                        // NOT_REQUIRED | PENDING_APPROVAL | APPROVED | REJECTED | EXPIRED | CANCELLED
   google.protobuf.Timestamp approval_expires_at = 9;  // set only while approval_status == PENDING_APPROVAL

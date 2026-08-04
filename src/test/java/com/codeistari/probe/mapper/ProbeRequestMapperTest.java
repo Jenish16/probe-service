@@ -124,6 +124,28 @@ class ProbeRequestMapperTest {
 	}
 
 	@Test
+	void mapsPendingGrpcResponseWithoutInventingAProcessingStatus() {
+		Instant createdAt = Instant.parse("2026-05-27T10:00:00Z");
+		ForgeJobGrpcResponse grpcResponse = ForgeJobGrpcResponse.newBuilder()
+				.setForgeJobId("fj_pending")
+				.setArtifactName("sun-blade")
+				.setArtifactType("BLADE")
+				.setMaterial("OBSIDIAN")
+				.setRequestedBy("ranger")
+				.setPowerLevel(8)
+				.setRequesterReference("req-pending")
+				.setApprovalStatus("PENDING_APPROVAL")
+				.setCreatedAt(Timestamp.newBuilder().setSeconds(createdAt.getEpochSecond()))
+				.build();
+
+		ProbeForgeJobResponse response = mapper.toProbeForgeJobResponse(grpcResponse, ForgeTransport.GRPC);
+
+		assertThat(response.status()).isNull();
+		assertThat(response.approvalStatus())
+				.isEqualTo(com.codeistari.probe.domain.ApprovalStatus.PENDING_APPROVAL);
+	}
+
+	@Test
 	void mapsPendingApprovalSummaries() {
 		Instant submittedAt = Instant.parse("2026-05-27T10:00:00Z");
 		Instant expiresAt = Instant.parse("2026-05-27T10:30:00Z");
