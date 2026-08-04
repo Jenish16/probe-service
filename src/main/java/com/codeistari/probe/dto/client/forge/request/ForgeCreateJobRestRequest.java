@@ -5,4 +5,6 @@ public record ForgeCreateJobRestRequest(
 		String artifactType,
 		String material,
 		String requestedBy,
-		int powerLevel) {}
+		int powerLevel,
+		String requesterReference,
+		String originalRequestId) {}

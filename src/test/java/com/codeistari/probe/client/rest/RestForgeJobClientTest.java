@@ -58,7 +58,7 @@ class RestForgeJobClientTest {
 		ForgeJobRestResponse response =
 				client.createForgeJob(
 						new ForgeCreateJobRestRequest(
-								"ember-ring", "RING", "MITHRIL", "ranger", 7));
+								"ember-ring", "RING", "MITHRIL", "ranger", 7, "req-ref-1", null));
 
 		assertThat(response.forgeJobId()).isEqualTo("fj_123");
 		assertThat(response.status()).isEqualTo("QUEUED");
@@ -76,8 +76,9 @@ class RestForgeJobClientTest {
 
 		assertThatThrownBy(
 						() ->
-								client.createForgeJob(
-										new ForgeCreateJobRestRequest("", "RING", "MITHRIL", "ranger", 7)))
+										client.createForgeJob(
+										new ForgeCreateJobRestRequest(
+												"", "RING", "MITHRIL", "ranger", 7, "req-ref-1", null)))
 				.isInstanceOf(ForgeRemoteCallException.class)
 				.hasMessageContaining("artifactName: must not be blank")
 				.extracting(ex -> ((ForgeRemoteCallException) ex).getStatus())
@@ -114,7 +115,7 @@ class RestForgeJobClientTest {
 						() ->
 								client.createForgeJob(
 										new ForgeCreateJobRestRequest(
-												"ember-ring", "RING", "MITHRIL", "ranger", 7)))
+												"ember-ring", "RING", "MITHRIL", "ranger", 7, "req-ref-1", null)))
 				.isInstanceOf(ForgeRemoteCallException.class)
 				.hasMessageContaining("forge-service returned HTTP 500")
 				.extracting(ex -> ((ForgeRemoteCallException) ex).getStatus())

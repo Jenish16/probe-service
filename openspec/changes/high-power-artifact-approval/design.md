@@ -180,6 +180,10 @@ public record ProbeForgeJobResponse(
     ForgeTransport transport,
     String requesterReference,        // NEW — echoes the idempotency key
     String originalRequestReference,  // NEW — nullable, echoes the link if any
+                                       // (downstream DTO field is named
+                                       // `originalRequestId` to match
+                                       // forge-service exactly; mapper
+                                       // translates — Gate 2, IC-002)
     ApprovalStatus approvalStatus,    // NEW — null/absent for power level 1–7
     String rejectionReason,           // NEW — populated only when REJECTED
     Instant approvalExpiresAt) {}     // NEW — populated only while
@@ -275,43 +279,51 @@ Implemented by `RestApprovalForgeClient` (extends `BaseApiClient`, same
 `FORGE_GRPC` names, same deadline property, same `mapGrpcException` status
 mapping as `GrpcForgeJobClient`). `ForgeCreateJobRestRequest` and
 `ForgeJobRestResponse` gain the same additive fields as their public
-counterparts (`requesterReference`, `originalRequestReference`,
-`approvalStatus`, `rejectionReason`, `approvalExpiresAt`).
+counterparts (`requesterReference`, `originalRequestId` — named to match
+forge-service's actual field exactly rather than `originalRequestReference`,
+per Gate 2 `IC-002` — `approvalStatus`, `rejectionReason`,
+`approvalExpiresAt`). `ProbeRequestMapper` translates between the public
+`originalRequestReference` field and this downstream `originalRequestId`
+field. `getDecisionHistory` calls forge-service's
+`GET /api/v1/forge-jobs/history?requesterReference={ref}` with
+`requesterReference` as a query parameter, per forge-service's confirmed
+contract (Gate 2 discovery).
 
-### Cross-service dependencies (not decided by this design)
+### Cross-service dependencies (confirmed against forge-service#5, Gate 2)
 
-These are the exact points where probe-service's contract depends on
-forge-service's not-yet-written Technical Design, per PD-001. They are
-documented as **required capabilities from forge-service**, not as settled
-field names:
+These were originally the exact points where probe-service's contract
+depended on forge-service's not-yet-written Technical Design, per PD-001.
+Gate 2 (`implementation-conflict-review.md`) has since compared them against
+forge-service's actual implementation PR (`forge-service#5`) and confirmed
+D-1 through D-5 below, with two exact-resource gaps resolved as `IC-001`
+(rollout sequencing) and `IC-002` (field naming, applied inline above):
 
-- **D-1 (stable reference before forging)**: forge-service must return a
-  stable identifier immediately on submission, even for `PENDING_APPROVAL`
-  requests where no forging has started. This design assumes it can keep
-  reusing `forgeJobId` as that identifier; if forge-service's design instead
-  introduces a separate pre-forging identifier, probe's public contract and
-  this design's field mapping must be revisited.
-- **D-2 (approval-aware create/get)**: forge-service's existing
-  `createForgeJob`/`getForgeJob` REST and gRPC contracts must additively
-  carry `approvalStatus`, `rejectionReason`, `approvalExpiresAt`,
-  `requesterReference`, `originalRequestReference` — this design assumes
-  additive fields on the existing contract rather than new dedicated
-  submit-for-approval endpoints.
-- **D-3 (new approval operations)**: forge-service must expose equivalent
-  REST and gRPC operations for list-pending, approve, reject, cancel, and
-  decision-history — none of these exist in `forge-service`'s contract
-  today (`docs/external-services.md`). Exact paths/RPC names are
-  forge-service's choice; probe's new client interface above is this
-  repository's expected shape, subject to change once forge-service's
-  design is published.
-- **D-4 (gRPC proto additions)**: per project rules, this repository does
-  not change forge-service's proto contract
-  (`proto/artifact_forge_service.proto` is a mirror, not the source of
-  truth). New RPCs for D-3 must be added to forge-service's proto first and
-  mirrored here once agreed.
-- **D-5 (operator identity passthrough)**: `operatorId` is passed to
-  forge-service unauthenticated; forge-service's decision-history recording
-  must accept and store it as an opaque string (Decision 2).
+- **D-1 (stable reference before forging) — confirmed**: forge-service
+  generates `forgeJobId` immediately in `createForgeJob` regardless of
+  `approvalStatus`; no separate pre-forging identifier exists. probe's
+  assumption holds unchanged.
+- **D-2 (approval-aware create/get) — confirmed**: forge-service's
+  `createForgeJob`/`getForgeJob` REST and gRPC contracts additively carry
+  `approvalStatus`, `rejectionReason`, `approvalExpiresAt`,
+  `requesterReference`, `originalRequestId` (see `IC-002` for the field-name
+  reconciliation applied above).
+- **D-3 (new approval operations) — confirmed**: forge-service exposes
+  `GET .../pending-approval`, `POST .../{forgeJobId}/{approve,reject,cancel}`,
+  and `GET .../history?requesterReference={ref}` over REST, and
+  `ListPendingApprovals`/`ApproveForgeJob`/`RejectForgeJob`/`CancelForgeJob`/
+  `GetApprovalHistory` over gRPC. probe's `ApprovalForgeClient` interface
+  method set lines up 1:1; only `getDecisionHistory`'s downstream call shape
+  (query parameter, not path segment) needed noting (applied above).
+- **D-4 (gRPC proto additions) — confirmed**: forge-service added the five
+  new RPCs and additive fields directly to `proto/artifact_forge_service.proto`
+  in `forge-service#5`; this repository's proto mirror must be updated to
+  match once that PR (or its merged successor) is available, per the
+  existing "mirror, not source of truth" rule.
+- **D-5 (operator identity passthrough) — confirmed**: forge-service's
+  `ApproveForgeJobRequest{operatorId}`/`RejectForgeJobRequest{operatorId,
+  reason}` match probe's `ApprovalDecisionRequest{operatorId, reason}`
+  field-for-field; `CancelForgeJobRequest{requestedBy}` matches probe's
+  `CancelRequestRequest{requestedBy}` field-for-field. No change needed.
 
 ## Error handling
 
@@ -401,15 +413,12 @@ into the existing handler.
 
 1. Add new DTOs, enum, mapper methods, client interface + implementations,
    service, and controller — additive to existing files where possible.
-2. Coordinate the new `requesterReference` requirement and the D-1..D-5
-   cross-service dependencies with forge-service's Technical Design before
-   merging probe-service's implementation PR, per PD-001's `dependency`
-   classification (Gate 2 / implementation-conflict-review will re-check
-   this).
-3. Ship probe-service and forge-service changes together (or forge-service
-   first, since probe's new calls will fail closed via the existing circuit
-   breaker/timeout handling if forge-service doesn't yet support them,
-   degrading gracefully rather than corrupting state).
+2. D-1 through D-5 are confirmed against `forge-service#5` (Gate 2,
+   `implementation-conflict-review.md`); `IC-001` and `IC-002` are applied
+   above.
+3. **Mandatory joint rollout (`IC-001`)**: probe-service's implementation PR
+   for this initiative must not merge before, or independently of,
+   `forge-service#5` (or its merged successor) — see `tasks.md` §9.
 4. No feature flag is introduced (consistent with lightweight-POC scope);
    the new required `requesterReference` field is the natural rollout gate —
    old clients must be updated to supply it.
@@ -524,3 +533,34 @@ Numbered to match the developer confirmations captured in Context.
 | Transport | REST-only new operations | Developer explicitly chose full dual-transport parity |
 | Idempotency key | Reuse `requestedBy` | Conflates "who" with "which attempt"; developer chose a distinct field |
 | Retry linkage | Same-reference-only, no explicit link field | Cannot express the spec's "new reference linked through original request" case |
+
+## Implementation notes (added during `/opsx-apply`, reconciled against `forge-service#5`'s merged contract)
+
+A handful of details in this document were refined during implementation once
+forge-service's actual (already-implemented) contract was available; none
+change the public API surface described above:
+
+- **`domain.ApprovalStatus` gained a sixth value, `NOT_REQUIRED`**, matching
+  forge-service's actual wire value for power level 1–7 jobs (forge-service
+  never omits the field). `ProbeRequestMapper` translates `NOT_REQUIRED` to
+  `null` on `ProbeForgeJobResponse.approvalStatus`, so the public contract
+  documented above ("null/absent for power level 1–7") is unchanged.
+- **`ApprovalDecisionRequest` (approve) and reject use two separate request
+  types** — `ApprovalDecisionRequest{operatorId}` and a new
+  `RejectDecisionRequest{operatorId, reason}` — rather than one shared type
+  with `reason` validated only on the reject path. This mirrors
+  forge-service's own confirmed `ApproveForgeJobRequest`/`RejectForgeJobRequest`
+  split exactly, and was the explicitly-permitted fallback ("a dedicated
+  `RejectRequest` subtype if Bean Validation groups prove awkward").
+- **`DecisionHistoryEntry.decision` is typed `domain.ApprovalDecisionType`
+  (`APPROVE`/`REJECT`/`CANCEL`)**, a new enum, not `ApprovalStatus` as
+  sketched above — forge-service's actual `ApprovalDecisionResponse.decisionType`
+  can be `CANCEL` (cancellation is recorded as a decision), which does not fit
+  `ApprovalStatus`'s vocabulary.
+- **No dedicated pending-summary downstream DTO was needed.**
+  `GET /pending-approval` returns forge-service's existing `ForgeJobResponse`
+  shape directly (confirmed against `forge-service#5`), not a bespoke summary
+  type, so `ApprovalForgeClient.listPendingApprovals()` returns
+  `List<ForgeJobRestResponse>`; the conversion to `ProbePendingApprovalSummary`
+  happens only at the `ProbeRequestMapper` boundary, matching Alternatives'
+  intent without an extra downstream type.

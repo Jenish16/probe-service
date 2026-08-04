@@ -11,6 +11,11 @@ option java_multiple_files = true;
 service ArtifactForgeService {
   rpc CreateForgeJob(CreateForgeJobGrpcRequest) returns (ForgeJobGrpcResponse);
   rpc GetForgeJob(GetForgeJobGrpcRequest) returns (ForgeJobGrpcResponse);
+  rpc ListPendingApprovals(ListPendingApprovalsGrpcRequest) returns (ListPendingApprovalsGrpcResponse);
+  rpc ApproveForgeJob(ApproveForgeJobGrpcRequest) returns (ForgeJobGrpcResponse);
+  rpc RejectForgeJob(RejectForgeJobGrpcRequest) returns (ForgeJobGrpcResponse);
+  rpc CancelForgeJob(CancelForgeJobGrpcRequest) returns (ForgeJobGrpcResponse);
+  rpc GetApprovalHistory(GetApprovalHistoryGrpcRequest) returns (ForgeJobHistoryGrpcResponse);
 }
 
 message CreateForgeJobGrpcRequest {
@@ -19,6 +24,8 @@ message CreateForgeJobGrpcRequest {
   string material = 3;
   string requested_by = 4;
   int32 power_level = 5;
+  string requester_reference = 6;
+  string original_request_id = 7;
 }
 
 message GetForgeJobGrpcRequest {
@@ -34,4 +41,50 @@ message ForgeJobGrpcResponse {
   int32 power_level = 6;
   string status = 7;
   google.protobuf.Timestamp created_at = 8;
+  string approval_status = 9;
+  google.protobuf.Timestamp approval_expires_at = 10;
+  string rejection_reason = 11;
+  string requester_reference = 12;
+  string original_request_id = 13;
+}
+
+message ListPendingApprovalsGrpcRequest {}
+
+message ListPendingApprovalsGrpcResponse {
+  repeated ForgeJobGrpcResponse pending = 1;
+}
+
+message ApproveForgeJobGrpcRequest {
+  string forge_job_id = 1;
+  string operator_id = 2;
+}
+
+message RejectForgeJobGrpcRequest {
+  string forge_job_id = 1;
+  string operator_id = 2;
+  string reason = 3;
+}
+
+message CancelForgeJobGrpcRequest {
+  string forge_job_id = 1;
+  string requested_by = 2;
+}
+
+message GetApprovalHistoryGrpcRequest {
+  string requester_reference = 1;
+}
+
+message ApprovalDecisionGrpcResponse {
+  string decision_id = 1;
+  string forge_job_id = 2;
+  string decision_type = 3;
+  string operator_id = 4;
+  string reason = 5;
+  google.protobuf.Timestamp decided_at = 6;
+}
+
+message ForgeJobHistoryGrpcResponse {
+  string requester_reference = 1;
+  repeated ForgeJobGrpcResponse attempts = 2;
+  repeated ApprovalDecisionGrpcResponse decisions = 3;
 }

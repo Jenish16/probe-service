@@ -13,6 +13,11 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
+/**
+ * Submit and retrieve forge jobs. Power level 8-10 submissions now return {@code
+ * approvalStatus: PENDING_APPROVAL} and no forging begins until an operator decision is made; see
+ * {@link ProbeApprovalController} for the operator/audit operations.
+ */
 @RestController
 @RequestMapping("/api/v1/probe-requests/forge-jobs")
 public class ProbeRequestController {

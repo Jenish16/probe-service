@@ -1,14 +1,16 @@
 schema_version: 2
 initiative_id: "POC-HIGH-POWER-APPROVAL"
-status: tech-approved
-updated_at: "2026-08-03T23:04:00Z"
+status: implementation-in-progress
+updated_at: "2026-08-04T01:00:00Z"
 pull_requests:
   technical_spec:
     - "https://github.com/Jenish16/probe-service/pull/4"
-  implementation: []
+  implementation:
+    - "https://github.com/Jenish16/probe-service/pull/7"
 related_repositories:
   - Jenish16/forge-service
 parallel_discovery: dependency
-implementation_conflict: not-run
+implementation_conflict: dependency
 counterpart_specs:
   - "https://github.com/Jenish16/forge-service/pull/3"
+  - "https://github.com/Jenish16/forge-service/pull/5"
