@@ -1,6 +1,7 @@
 package com.codeistari.probe.client.grpc;
 
 import com.codeistari.forge.artifact.grpc.proto.ArtifactForgeServiceGrpc;
+import com.codeistari.forge.artifact.grpc.proto.LoadoutServiceGrpc;
 import com.codeistari.probe.config.ForgeClientProperties;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
@@ -20,5 +21,10 @@ public class GrpcForgeClientConfig {
 	ArtifactForgeServiceGrpc.ArtifactForgeServiceBlockingStub forgeBlockingStub(
 			ManagedChannel forgeManagedChannel) {
 		return ArtifactForgeServiceGrpc.newBlockingStub(forgeManagedChannel);
+	}
+
+	@Bean
+	LoadoutServiceGrpc.LoadoutServiceBlockingStub loadoutBlockingStub(ManagedChannel forgeManagedChannel) {
+		return LoadoutServiceGrpc.newBlockingStub(forgeManagedChannel);
 	}
 }

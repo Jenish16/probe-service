@@ -110,24 +110,90 @@ that follow directly from D1–D3 and existing repository conventions.
 - **Alternatives considered**: None — D1 already forecloses inventing an
   independent shape.
 
-## D7 — Validation split
+## D7 — Validation split (revised by Gate 2, IC-001)
 
-- **Decision**: `probe-service` performs only structural Jakarta Bean
-  Validation on its public request DTOs (`@NotBlank`/`@NotNull`/`@Size(min=2,
-  max=10)` on `items`/`@Min`/`@Max` on `powerLevel`), matching the existing
-  `CreateProbeForgeJobRequest` pattern. Per-item business-rule validation
-  (artifact-name/type/material/power-level rules, FR-002) and the resulting
-  `rejectedItems` reporting are entirely `forge-service`'s responsibility;
-  `probe-service` passes `forge-service`'s validation outcome through
-  unmodified.
-- **Rationale**: Matches the existing split exactly — `probe-service` never
-  duplicates forge-service's business validation rules today, and D1 (pure
-  pass-through) means it must not start doing so for loadouts either.
-- **Alternatives considered**: Duplicating forge-service's per-item
-  validation rules in `probe-service` — rejected; violates `AGENTS.md`
-  ("Do not duplicate forge-service business logic or validation rules
-  beyond caller-side pre-checks") and would risk drifting from
-  `forge-service`'s rules over time.
+- **Original decision (superseded)**: `probe-service` performs structural
+  Jakarta Bean Validation on its public request DTOs, including typed
+  `ArtifactType`/`ForgeMaterial` enums with `@NotNull` and `@Min`/`@Max` on
+  `powerLevel`, and `@Size(min = 2, max = 10)` on `items` — matching the
+  existing `CreateProbeForgeJobRequest` pattern.
+- **Gate 2 finding (IC-001)**: `forge-service`'s actual implementation
+  (`Jenish16/forge-service#6`, `LoadoutItemRequest.java`,
+  `RetryLoadoutItemRequest.java`, `LoadoutService.validationFailureReason`)
+  deliberately uses **raw, unvalidated `String` fields** for
+  `artifactType`/`material` and an unconstrained `int`/`Integer`
+  `powerLevel` — no Bean Validation at all on individual item fields — so
+  that an invalid value becomes an individual `RejectedItemResponse` entry
+  (FR-002/FR-003) rather than failing Bean Validation for the whole request.
+  The 2–10 item-count bound (FR-001) is likewise **not** Bean-Validation-
+  enforced on `forge-service`'s side; it is a manual check in
+  `LoadoutService.createLoadout` with a dedicated error message. If
+  `probe-service` used typed enums or numeric bounds on these same fields,
+  an invalid value would fail JSON deserialization or Bean Validation at
+  `probe-service` and reject the **entire** request with a generic `400`,
+  making it impossible for a `probe-service` caller to ever reach
+  `forge-service`'s correct "some items accepted, one rejected with a
+  reason" behavior (spec.md User Story 1, Acceptance Scenario 2).
+- **Revised decision (developer-confirmed)**: `probe-service`'s
+  `ProbeLoadoutItemRequest` and `RetryProbeLoadoutItemRequest` mirror
+  `forge-service`'s `LoadoutItemRequest`/`RetryLoadoutItemRequest` exactly —
+  raw `String artifactName`/`artifactType`/`material`, unconstrained
+  `int`/`Integer powerLevel`, with **no** per-field Bean Validation
+  annotations. `CreateProbeLoadoutRequest.items` uses only `@NotNull
+  @NotEmpty @Valid` (matching `forge-service`'s own Bean Validation
+  footprint on `CreateLoadoutRequest` 1:1) — **no** `@Size(min=2, max=10)`.
+  All per-item business-rule validation and the 2–10 item-count bound
+  remain entirely `forge-service`'s responsibility; `probe-service` forwards
+  every item regardless of its own opinion on validity and passes
+  `forge-service`'s validation outcome (`rejectedItems`, or a `400` with
+  `forge-service`'s dedicated message) through unmodified. `probe-service`
+  retains `@NotBlank` on `requestReference`/`loadoutName`/`requestedBy` and
+  `@NotBlank` on `RetryProbeLoadoutItemRequest.loadoutItemId` — these match
+  `forge-service`'s own Bean Validation exactly and have no
+  behavior-narrowing effect (both sides reject blank container fields the
+  same way, with the same category of generic message).
+- **Rationale**: A caller-side structural pre-check is only equivalent, not
+  duplicative, when it produces the exact same outcome as `forge-service`'s
+  authoritative check for every input — which holds for blank
+  container-level fields, but not for typed/bounded item fields (those
+  change *which* items get rejected and by *which* mechanism). Using typed
+  enums or numeric bounds here would silently duplicate — and narrow —
+  `forge-service`'s business validation, violating `AGENTS.md` ("Do not
+  duplicate forge-service business logic or validation rules beyond
+  caller-side pre-checks") in a way that breaks FR-002/FR-003 for
+  `probe-service` callers specifically.
+- **Alternatives considered**: Keep the original typed/bounded design and
+  accept the behavior difference as documented — rejected by the developer;
+  it would make `probe-service`'s create/retry endpoints non-conformant
+  with FR-002/FR-003/FR-016 for a whole class of otherwise-valid requests.
+
+## D11 — gRPC `ALREADY_EXISTS` error mapping (Gate 2, IC-002)
+
+- **Gate 2 finding**: `forge-service`'s Loadout gRPC service
+  (`LoadoutGrpcService.createLoadout`) returns
+  `Status.ALREADY_EXISTS.withDescription(...)` for the duplicate-
+  `requestReference`-with-different-content case (REST's `409 Conflict`,
+  FR-009). The existing `GrpcForgeJobClient.mapGrpcException` switch
+  (reused by the single-artifact flow) has no `ALREADY_EXISTS` case; it
+  would fall through to the generic `default → 502 Bad Gateway` branch,
+  silently misclassifying a legitimate `409` as a downstream failure.
+- **Decision**: `GrpcLoadoutClient`'s own gRPC-exception-mapping method
+  adds an explicit case: `ALREADY_EXISTS → HttpStatus.CONFLICT` (409),
+  alongside the existing `INVALID_ARGUMENT → 400`, `NOT_FOUND → 404`,
+  `DEADLINE_EXCEEDED → 504`, `INTERNAL/UNAVAILABLE/RESOURCE_EXHAUSTED →
+  502` cases (mirrors `GrpcForgeJobClient.mapGrpcException`'s structure,
+  extended with the one additional code the Loadout API introduces).
+- **Rationale**: `forge-service`'s gRPC and REST Loadout APIs must produce
+  equivalent `probe-service`-facing outcomes (FR-020, "consistent behavior
+  regardless of whether the underlying integration uses REST or gRPC") —
+  the REST path already forwards `409` generically via
+  `BaseApiClient.handleResponse`; the gRPC path needs this one explicit
+  addition since its error mapping is a hardcoded switch, not generic.
+- **Alternatives considered**: Reusing `GrpcForgeJobClient.mapGrpcException`
+  as-is for `GrpcLoadoutClient` — rejected; it has no `ALREADY_EXISTS` case
+  and editing it to add one would also change the single-artifact flow's
+  gRPC error mapping, which has no idempotency-conflict case in its own
+  contract today (FR-019, must stay unmodified).
 
 ## D8 — Idempotency handling
 

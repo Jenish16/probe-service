@@ -10,7 +10,14 @@ PD-001). `forge-service` PR
 [#4](https://github.com/Jenish16/forge-service/pull/4) owns the Loadout
 aggregate and its REST/gRPC contract for this same initiative
 (`POC-QUEST-LOADOUTS`); this plan defines `probe-service`'s consuming role
-only, as resolved in PD-001.
+only, as resolved in PD-001. Gate 2 (Implementation Conflict Check) also
+run — see
+[implementation-conflict-review.md](./implementation-conflict-review.md)
+(`dependency`, IC-001/IC-002) — against `forge-service`'s merged Technical
+Plan (PR #4) and its now-open implementation
+([forge-service#6](https://github.com/Jenish16/forge-service/pull/6)),
+which revised research.md D7 (item-field validation split) and added D11
+(gRPC `ALREADY_EXISTS` error mapping).
 
 ## Summary
 
@@ -83,7 +90,7 @@ instead:
 |---|---|
 | "Do not add frameworks or infrastructure without a clear reason" | PASS — no new dependencies; reuses Spring Boot, gRPC, Resilience4j already in `build.gradle.kts`. |
 | "Do not structure the whole service around one downstream dependency" | PASS — this feature adds one more `forge-service`-backed capability alongside the existing single-artifact one; it does not restructure the service. |
-| "Do not duplicate forge-service business logic or validation rules beyond caller-side pre-checks" | PASS — research.md D7: only structural Bean Validation (item count, blank/null/range checks) is added; all business-rule validation stays in `forge-service`. |
+| "Do not duplicate forge-service business logic or validation rules beyond caller-side pre-checks" | PASS — research.md D7 (revised by Gate 2 IC-001): only container-level blank/null checks are added, matching `forge-service`'s own Bean Validation footprint exactly; all item-field and item-count business-rule validation stays in `forge-service`. |
 | "Preserve REST and gRPC contracts documented in specs and proto/" | PASS — existing `/api/v1/probe-requests/forge-jobs/*` contract is untouched (FR-019); the new Loadout contract is additive. |
 | "Keep public probe-service DTOs separate from downstream forge REST DTOs" | PASS — research.md D6: new `dto/request`/`dto/response` `Probe*` types are distinct from new `dto/client/forge/*` `Forge*` types. |
 | "Do not create a top-level `forge` module or `com.codeistari.probe.forge` package" | PASS — new classes are added to the existing `controller`/`service`/`client`/`mapper`/`dto`/`domain` packages, no new top-level package. |
@@ -103,7 +110,7 @@ sequenceDiagram
     participant FS as forge-service
 
     Requester->>PC: POST /api/v1/probe-requests/loadouts/{rest|grpc}
-    PC->>PC: Bean Validation (2-10 items, required fields)
+    PC->>PC: Bean Validation (required fields only, no item-level checks)
     PC->>PS: create(request)
     alt rest suffix
         PS->>M: toForgeCreateLoadoutRestRequest(request)
@@ -118,7 +125,7 @@ sequenceDiagram
     end
     PS->>M: toProbeLoadoutResponse(forgeResponse, transport)
     PS-->>PC: ProbeLoadoutResponse
-    PC-->>Requester: 201/200/400/409
+    PC-->>Requester: 201 (always, see contracts doc)/400/409
 ```
 
 `probe-service` adds, per the existing single-artifact layering
@@ -153,8 +160,11 @@ sequenceDiagram
   instances (research.md D4), since they call the same `forge-service` host.
 - No changes to `exception/GlobalExceptionHandler`,
   `exception/ForgeRemoteCallException`, or `client/BaseApiClient` — the
-  existing generic status-forwarding pipeline already covers every error
-  case in `contracts/quest-loadouts-probe-rest.md` (research.md D9).
+  existing generic status-forwarding pipeline already covers every REST
+  error case in `contracts/quest-loadouts-probe-rest.md` (research.md D9).
+  `GrpcLoadoutClient` needs its own gRPC-status-mapping method (not a
+  change to `GrpcForgeJobClient`'s) with one addition beyond the existing
+  pattern: `ALREADY_EXISTS → 409 Conflict` (research.md D11, Gate 2 IC-002).
 
 ## Data & State Model
 
@@ -288,6 +298,7 @@ single-artifact endpoints either way.
 | Duplicating `forge-service`'s enum value sets (`ArtifactType`, `ForgeMaterial`, and now opaque status strings) risks drift if `forge-service` changes them. | Same accepted risk as the existing single-artifact flow (`docs/entities-enums.md`); status values are kept opaque specifically to minimize this risk for the new Loadout/item/approval status fields (research.md D3). |
 | Alternative considered: `probe-service` builds its own Loadout aggregate/state instead of a pure pass-through. | Rejected (PD-001) — would conflict with `forge-service`'s already-fixed ownership of the Loadout aggregate for this initiative. |
 | Alternative considered: single fixed-transport endpoints instead of `/rest`/`/grpc` suffixes. | Rejected (research.md D2, developer-confirmed) — breaks FR-020's parity with the existing transport-choice pattern. |
+| Alternative considered: typed enums/bounded fields on `probe-service`'s item-level request DTOs (original research.md D7). | Rejected by Gate 2 (IC-001, developer-confirmed) — would silently narrow `forge-service`'s per-item validation into a whole-request rejection, breaking FR-002/FR-003 for `probe-service` callers. |
 
 ## Validation Approach
 

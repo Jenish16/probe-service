@@ -29,3 +29,7 @@ replay_pid*
 # Gradle
 .gradle
 build/
+
+# Python
+__pycache__/
+*.pyc

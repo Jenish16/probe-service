@@ -4,8 +4,8 @@
 
 | Service | Protocol | Endpoints/methods used | Timeout/deadline | Resilience |
 |---|---|---|---|---|
-| `forge-service` | REST | `POST /api/v1/forge-jobs`, `GET /api/v1/forge-jobs/{forgeJobId}` (base URL `http://localhost:8081`, configurable via `forge.rest.base-url`) | `forge.rest.timeout-ms` (default 2000ms) | Resilience4j `FORGE_REST` circuit breaker + retry |
-| `forge-service` | gRPC | `ArtifactForgeService.CreateForgeJob`, `ArtifactForgeService.GetForgeJob` (`localhost:9091`, configurable via `forge.grpc.host`/`forge.grpc.port`) | `forge.grpc.deadline-ms` (default 2000ms) | Resilience4j `FORGE_GRPC` circuit breaker + retry |
+| `forge-service` | REST | `POST /api/v1/forge-jobs`, `GET /api/v1/forge-jobs/{forgeJobId}`, and Loadout: `POST /api/v1/loadouts`, `GET /api/v1/loadouts/{loadoutId}`, `POST /api/v1/loadouts/{loadoutId}/cancel`, `POST /api/v1/loadouts/{loadoutId}/retry`, `GET /api/v1/loadouts/{loadoutId}/items/{loadoutItemId}/attempts` (base URL `http://localhost:8081`, configurable via `forge.rest.base-url`) | `forge.rest.timeout-ms` (default 2000ms) | Resilience4j `FORGE_REST` circuit breaker + retry |
+| `forge-service` | gRPC | `ArtifactForgeService.CreateForgeJob`, `ArtifactForgeService.GetForgeJob`, and `LoadoutService.{CreateLoadout,GetLoadout,CancelLoadout,RetryLoadout,GetLoadoutItemAttempts}` (`localhost:9091`, configurable via `forge.grpc.host`/`forge.grpc.port`) | `forge.grpc.deadline-ms` (default 2000ms) | Resilience4j `FORGE_GRPC` circuit breaker + retry (same instances reused for both gRPC services, research.md D4) |
 
 `forge-service` is the only downstream dependency in this codebase — confirmed by scanning `client/` for all outbound calls.
 
@@ -29,6 +29,6 @@ These are libraries embedded in the same process, not external service dependenc
 
 ## AI guidance
 
-- `forge-service` is the sole downstream dependency; both REST and gRPC paths are actively exercised. Do not change `dto/client/forge/*` or the gRPC client without confirming forge-service's actual contract (`forge-service/proto/artifact_forge_service.proto`, `forge-service/specs/001-artifact-forging-rest-grpc/spec.md`).
+- `forge-service` is the sole downstream dependency; both REST and gRPC paths are actively exercised. Do not change `dto/client/forge/*` or the gRPC client without confirming forge-service's actual contract (`forge-service/proto/artifact_forge_service.proto`, `forge-service/specs/001-artifact-forging-rest-grpc/spec.md`; Loadout: `forge-service/proto/quest_loadout_service.proto`, `forge-service/specs/002-quest-loadout-fulfilment/contracts/quest-loadouts-rest.md`).
 - Do not remove or loosen the Resilience4j timeouts/retry predicates in `ResilienceConfig` without updating `docs/TECH_STACK.md` and the relevant spec — the retry-on-5xx/network-only, fail-fast-on-4xx design is deliberate.
 - Because there is no confirmed upstream caller, changing probe-service's public REST contract (`dto/request`, `dto/response`) is lower-risk than changing the forge-service-facing contract, but should still go through `specs/001-artifact-forging-rest-grpc/spec.md`.
