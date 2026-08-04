@@ -2,7 +2,7 @@
 
 ## Entities
 
-None. `probe-service` holds no persisted domain entities — a scan of `domain/`, the (absent) `repository/` package, and `resources/` confirms there is no database, cache, or in-memory store of its own. All request/response types (`CreateProbeForgeJobRequest`, `ProbeForgeJobResponse`, `ForgeCreateJobRestRequest`, `ForgeJobRestResponse`, and the High-Power Artifact Approval DTOs below) are transient DTOs, not entities — the service is a stateless caller. All approval state (`PENDING_APPROVAL`/`APPROVED`/`REJECTED`/`EXPIRED`/`CANCELLED`, idempotency, decision history) is owned and persisted by `forge-service`, not probe-service.
+None. `probe-service` holds no persisted domain entities — a scan of `domain/`, the (absent) `repository/` package, and `resources/` confirms there is no database, cache, or in-memory store of its own. All request/response types (`CreateProbeForgeJobRequest`, `ProbeForgeJobResponse`, `ForgeCreateJobRestRequest`, `ForgeJobRestResponse`, the High-Power Artifact Approval DTOs, and the Quest Loadout Fulfilment DTOs — `CreateProbeLoadoutRequest`, `ProbeLoadoutResponse`, `ProbeLoadoutAttemptHistoryResponse`, and their downstream `Forge*` counterparts) are transient DTOs, not entities — the service is a stateless caller. All approval state (`PENDING_APPROVAL`/`APPROVED`/`REJECTED`/`EXPIRED`/`CANCELLED`, idempotency, decision history) is owned and persisted by `forge-service`, not probe-service.
 
 ## Enums
 
@@ -14,7 +14,7 @@ None. `probe-service` holds no persisted domain entities — a scan of `domain/`
 | `ApprovalStatus` | `NOT_REQUIRED`, `PENDING_APPROVAL`, `APPROVED`, `REJECTED`, `EXPIRED`, `CANCELLED` | `domain/ApprovalStatus.java` | Mirrored from forge-service (the owning service). forge-service's wire value `NOT_REQUIRED` (power level 1-7 jobs) is translated to a `null` `ProbeForgeJobResponse.approvalStatus` by `ProbeRequestMapper`, per the public API contract. |
 | `ApprovalDecisionType` | `APPROVE`, `REJECT`, `CANCEL` | `domain/ApprovalDecisionType.java` | Mirrored from forge-service; used only in `DecisionHistoryEntry.decision`. |
 
-Note: unlike forge-service, `probe-service` does not define its own `ForgeJobStatus` enum. `ProbeForgeJobResponse.status` is a raw `String`, passed through opaquely from whatever forge-service returns (`ForgeJobRestResponse.status` / gRPC `status` field are also `String`). This is a deliberate (if implicit) decoupling — probe-service does not need to know forge-service's status values to relay them.
+Note: unlike forge-service, `probe-service` does not define its own `ForgeJobStatus` enum. `ProbeForgeJobResponse.status` is a raw `String`, passed through opaquely from whatever forge-service returns (`ForgeJobRestResponse.status` / gRPC `status` field are also `String`). This is a deliberate (if implicit) decoupling — probe-service does not need to know forge-service's status values to relay them. The same opaque-`String` pass-through is used for every Loadout/item/attempt status field (`ProbeLoadoutResponse.status`, `ProbeLoadoutItemResponse.status`/`approvalStatus`, `ProbeLoadoutAttemptResponse.status`/`approvalStatus`) — `probe-service` defines no `LoadoutStatus` enum either. Loadout item request fields (`ProbeLoadoutItemRequest.artifactType`/`material`) are likewise raw, unvalidated `String`s rather than the `ArtifactType`/`ForgeMaterial` enums used by the single-artifact request, since `forge-service` validates them itself and reports invalid values as individual rejected items.
 
 ## State transitions
 

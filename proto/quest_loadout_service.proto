@@ -1,0 +1,115 @@
+syntax = "proto3";
+
+package codeistari.forge.loadout;
+
+import "google/protobuf/timestamp.proto";
+
+option java_package = "com.codeistari.forge.artifact.grpc.proto";
+option java_outer_classname = "QuestLoadoutProto";
+option java_multiple_files = true;
+
+// New service. Does not modify ArtifactForgeService or
+// artifact_forge_service.proto in any way (research.md D6).
+service LoadoutService {
+  rpc CreateLoadout(CreateLoadoutGrpcRequest) returns (LoadoutGrpcResponse);
+  rpc GetLoadout(GetLoadoutGrpcRequest) returns (LoadoutGrpcResponse);
+  rpc CancelLoadout(CancelLoadoutGrpcRequest) returns (LoadoutGrpcResponse);
+  rpc RetryLoadout(RetryLoadoutGrpcRequest) returns (LoadoutGrpcResponse);
+  rpc GetLoadoutItemAttempts(GetLoadoutItemAttemptsGrpcRequest) returns (LoadoutItemAttemptsGrpcResponse);
+}
+
+message LoadoutItemGrpcRequest {
+  string artifact_name = 1;
+  string artifact_type = 2;
+  string material = 3;
+  int32 power_level = 4;
+}
+
+message CreateLoadoutGrpcRequest {
+  string request_reference = 1;
+  string loadout_name = 2;
+  string requested_by = 3;
+  repeated LoadoutItemGrpcRequest items = 4;
+}
+
+message GetLoadoutGrpcRequest {
+  string loadout_id = 1;
+}
+
+message CancelLoadoutGrpcRequest {
+  string loadout_id = 1;
+}
+
+// items MUST include every currently FAILED loadout_item_id (FR-017a).
+// Fields left empty on a RetryLoadoutItemGrpcRequest keep their prior value.
+message RetryLoadoutItemGrpcRequest {
+  string loadout_item_id = 1;
+  string artifact_name = 2;
+  string artifact_type = 3;
+  string material = 4;
+  int32 power_level = 5;
+}
+
+message RetryLoadoutGrpcRequest {
+  string loadout_id = 1;
+  repeated RetryLoadoutItemGrpcRequest items = 2;
+}
+
+message LoadoutItemGrpcResponse {
+  string loadout_item_id = 1;
+  string artifact_name = 2;
+  string artifact_type = 3;
+  string material = 4;
+  int32 power_level = 5;
+  string status = 6;           // QUEUED | FORGING | COMPLETED | FAILED | CANCELLED
+  string failure_reason = 7;   // present only when status == FAILED
+
+  // Pass-through only; owned entirely by High-Power Approval (design.md D1).
+  // Unset on every response until that initiative's implementation lands
+  // (research.md D15). Never derived or written by this plan.
+  string approval_status = 8;                        // NOT_REQUIRED | PENDING_APPROVAL | APPROVED | REJECTED | EXPIRED | CANCELLED
+  google.protobuf.Timestamp approval_expires_at = 9;  // set only while approval_status == PENDING_APPROVAL
+  string rejection_reason = 10;                        // set only when approval_status == REJECTED
+}
+
+message RejectedLoadoutItemGrpcResponse {
+  string artifact_name = 1;
+  string artifact_type = 2;
+  string material = 3;
+  int32 power_level = 4;
+  string reason = 5;
+}
+
+message LoadoutGrpcResponse {
+  string loadout_id = 1;
+  string loadout_name = 2;
+  string requested_by = 3;
+  string status = 4; // ACCEPTED (create only) | IN_PROGRESS | READY | PARTIALLY_READY | FAILED | CANCELLED
+  repeated LoadoutItemGrpcResponse items = 5;
+  repeated RejectedLoadoutItemGrpcResponse rejected_items = 6; // populated on create only
+}
+
+message GetLoadoutItemAttemptsGrpcRequest {
+  string loadout_id = 1;
+  string loadout_item_id = 2;
+}
+
+message LoadoutAttemptGrpcResponse {
+  int32 attempt_number = 1;
+  string forge_job_id = 2;
+  string status = 3;
+  string failure_reason = 4;
+  google.protobuf.Timestamp created_at = 5;
+
+  // requester_reference always equals this attempt's loadout_item_id
+  // (research.md D16); approval_status/rejection_reason are pass-through,
+  // owned entirely by High-Power Approval — see LoadoutItemGrpcResponse.
+  string requester_reference = 6;
+  string approval_status = 7;
+  string rejection_reason = 8;
+}
+
+message LoadoutItemAttemptsGrpcResponse {
+  string loadout_item_id = 1;
+  repeated LoadoutAttemptGrpcResponse attempts = 2; // ordered oldest -> newest
+}

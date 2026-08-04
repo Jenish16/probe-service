@@ -2,7 +2,7 @@
 
 ## System purpose
 
-`probe-service` is the caller-side Spring Boot service in the Code Istari learning POC. It exposes its own public REST API and, on behalf of an external caller, delegates forge-job creation/retrieval to `forge-service` over either REST or gRPC — the caller picks the transport by hitting a different endpoint.
+`probe-service` is the caller-side Spring Boot service in the Code Istari learning POC. It exposes its own public REST API and, on behalf of an external caller, delegates forge-job creation/retrieval (and, since the Quest Loadout Fulfilment feature, Loadout create/get/cancel/retry/attempt-history) to `forge-service` over either REST or gRPC — the caller picks the transport by hitting a different endpoint.
 
 Power level 8-10 submissions are gated behind an approval lifecycle (`PENDING_APPROVAL → APPROVED/REJECTED/EXPIRED/CANCELLED`), owned entirely by `forge-service` (probe-service holds no approval state of its own). probe-service additionally exposes operator/audit operations — list pending approvals, approve, reject, cancel, and decision history — each proxied to forge-service over both REST and gRPC, mirroring the existing dual-transport pattern.
 
@@ -11,17 +11,21 @@ Power level 8-10 submissions are gated behind an approval lifecycle (`PENDING_AP
 | Package | Responsibility |
 |---|---|
 | `com.codeistari.probe` | Application bootstrap (`ProbeServiceApplication`) |
-| `com.codeistari.probe.controller` | Public REST entrypoints (`ProbeRequestController` — create/get; `ProbeApprovalController` — list-pending/approve/reject/cancel/history) |
-| `com.codeistari.probe.service` | Orchestration (`ProbeRequestService` — create/get; `ProbeApprovalService` — the five approval/audit operations) |
-| `com.codeistari.probe.client` | `ForgeJobClient`, `ApprovalForgeClient` interfaces; `BaseApiClient` shared REST-call helper |
-| `com.codeistari.probe.client.rest` | `RestForgeJobClient`, `RestApprovalForgeClient` + `RestForgeClientConfig` |
-| `com.codeistari.probe.client.grpc` | `GrpcForgeJobClient`, `GrpcApprovalForgeClient` + `GrpcForgeClientConfig` |
-| `com.codeistari.probe.mapper` | `ProbeRequestMapper` — public DTO ↔ downstream DTO/proto mapping, including approval fields/DTOs |
+| `com.codeistari.probe.controller` | Public REST entrypoints (`ProbeRequestController` — create/get; `ProbeApprovalController` — list-pending/approve/reject/cancel/history; `ProbeLoadoutController` — Loadout create/get/cancel/retry/attempt-history) |
+| `com.codeistari.probe.service` | Orchestration (`ProbeRequestService`, `ProbeApprovalService`, `ProbeLoadoutService`) |
+| `com.codeistari.probe.client` | `ForgeJobClient`, `ApprovalForgeClient`, `LoadoutClient` interfaces; `BaseApiClient` shared REST-call helper |
+| `com.codeistari.probe.client.rest` | `RestForgeJobClient`, `RestApprovalForgeClient`, `RestLoadoutClient` + `RestForgeClientConfig` |
+| `com.codeistari.probe.client.grpc` | `GrpcForgeJobClient`, `GrpcApprovalForgeClient`, `GrpcLoadoutClient` + `GrpcForgeClientConfig` (shared `ManagedChannel`, one blocking stub per gRPC service) |
+| `com.codeistari.probe.mapper` | `ProbeRequestMapper` (including approval fields/DTOs), `ProbeLoadoutMapper` — public DTO ↔ downstream DTO/proto mapping |
 | `com.codeistari.probe.config` | `ForgeClientProperties` (`forge.*` config), `ResilienceConfig` (Resilience4j predicates), `RestClientFactory` |
-| `com.codeistari.probe.dto.request` / `.dto.response` | Public API DTOs (`CreateProbeForgeJobRequest`, `ProbeForgeJobResponse`, `ApprovalDecisionRequest`, `RejectDecisionRequest`, `CancelRequestRequest`, `ProbePendingApprovalSummary`, `DecisionHistoryResponse`) |
-| `com.codeistari.probe.dto.client.forge.request` / `.response` | Downstream forge-service REST DTOs (`ForgeCreateJobRestRequest`, `ForgeJobRestResponse`, `ForgeApproveJobRestRequest`, `ForgeRejectJobRestRequest`, `ForgeCancelJobRestRequest`, `ForgeDecisionHistoryRestResponse`) — deliberately kept separate from the public DTOs |
+| `com.codeistari.probe.dto.request` / `.dto.response` | Public API DTOs — single forge-job (`CreateProbeForgeJobRequest`, `ProbeForgeJobResponse`), High-Power Artifact Approval (`ApprovalDecisionRequest`, `RejectDecisionRequest`, `CancelRequestRequest`, `ProbePendingApprovalSummary`, `DecisionHistoryResponse`), and Loadout (`CreateProbeLoadoutRequest`, `ProbeLoadoutResponse`, `RetryProbeLoadoutRequest`, attempt-history DTOs) |
+| `com.codeistari.probe.dto.client.forge.request` / `.response` | Downstream forge-service REST DTOs mirroring the single-artifact, approval, and Loadout REST contracts — deliberately kept separate from the public DTOs |
 | `com.codeistari.probe.exception` | `ForgeRemoteCallException`, `ErrorResponse`, `GlobalExceptionHandler` |
 | `com.codeistari.probe.domain` | `ArtifactType`, `ForgeMaterial`, `ApprovalStatus`, `ApprovalDecisionType` (mirrored from forge-service), `ForgeTransport` (`REST`/`GRPC`, probe-specific) |
+
+### Quest Loadout Fulfilment (`specs/002-probe-quest-loadouts/`)
+
+`probe-service` is a pure, stateless pass-through facade over `forge-service`'s already-fixed `/api/v1/loadouts/*` REST and `LoadoutService` gRPC contract (research.md D1) — it performs no Loadout business logic, aggregation, or item-level validation of its own. Loadout item request fields (`artifactType`, `material`, `powerLevel`) are deliberately raw/unvalidated at `probe-service` (no Bean Validation, no typed enums) so an invalid item reaches `forge-service`'s per-item rejection reporting instead of failing the whole request at `probe-service` (research.md D7, Gate 2 IC-001). `GrpcLoadoutClient` has its own gRPC-status-mapping method, adding `ALREADY_EXISTS → 409 Conflict` beyond `GrpcForgeJobClient`'s cases, since the Loadout gRPC API introduces an idempotency-conflict scenario the single-artifact API doesn't have (research.md D11, Gate 2 IC-002).
 
 ## Request lifecycle
 
